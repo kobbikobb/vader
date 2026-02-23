@@ -1,0 +1,9 @@
+{
+  "name": "vader",
+  "version": "1.0.0",
+  "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects.",
+  "author": {
+    "name": "Jakob Jonasson",
+    "url": "https://github.com/kobbikobb"
+  }
+}

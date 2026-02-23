@@ -1,0 +1,26 @@
+{
+  "name": "vader",
+  "owner": {
+    "name": "Jakob Jonasson",
+    "email": "kobbikobb@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "A strict, opinionated wizard-driven workflow for planning and executing multi-milestone software projects with Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "vader",
+      "source": "./",
+      "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jakob Jonasson"
+      },
+      "homepage": "https://github.com/kobbikobb/vader",
+      "repository": "https://github.com/kobbikobb/vader",
+      "license": "MIT",
+      "keywords": ["workflow", "planning", "milestones", "ralph-wiggum", "project-management"],
+      "category": "productivity"
+    }
+  ]
+}
