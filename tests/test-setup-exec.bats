@@ -59,18 +59,28 @@ EOF
   [[ "$output" == *"No vader plan found"* ]]
 }
 
-@test "should output prompt referencing state file instead of inlining plan" {
+@test "should write prompt file referencing state file instead of inlining plan" {
   create_plan_file
 
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"executing a vader plan"* ]]
-  [[ "$output" == *"Read the state file"* ]]
-  [[ "$output" == *"current_milestone"* ]]
+  PROMPT_CONTENT=$(cat .claude/vader/prompt.local.md)
+  [[ "$PROMPT_CONTENT" == *"executing a vader plan"* ]]
+  [[ "$PROMPT_CONTENT" == *"Read the state file"* ]]
+  [[ "$PROMPT_CONTENT" == *"current_milestone"* ]]
   # Plan body should NOT be inlined in the prompt
-  [[ "$output" != *"Milestone 1: Setup"* ]]
-  [[ "$output" != *"Milestone 2: Feature"* ]]
+  [[ "$PROMPT_CONTENT" != *"Milestone 1: Setup"* ]]
+  [[ "$PROMPT_CONTENT" != *"Milestone 2: Feature"* ]]
+}
+
+@test "should output prompt file path" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *".claude/vader/prompt.local.md"* ]]
 }
 
 @test "should update status to executing" {
@@ -98,7 +108,8 @@ EOF
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Hurra Vader has Triumphed"* ]]
+  PROMPT_CONTENT=$(cat .claude/vader/prompt.local.md)
+  [[ "$PROMPT_CONTENT" == *"Hurra Vader has Triumphed"* ]]
 }
 
 @test "should include milestone workflow instructions" {
@@ -107,6 +118,7 @@ EOF
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"commit"* ]]
-  [[ "$output" == *"current_milestone"* ]]
+  PROMPT_CONTENT=$(cat .claude/vader/prompt.local.md)
+  [[ "$PROMPT_CONTENT" == *"commit"* ]]
+  [[ "$PROMPT_CONTENT" == *"current_milestone"* ]]
 }

@@ -97,5 +97,4 @@ FRONTMATTER
 echo "Plan saved to $STATE_FILE"
 echo "Total milestones: $TOTAL_MILESTONES"
 echo "Max iterations: $MAX_ITERATIONS"
-echo ""
-echo "Run /vader:exec to start execution."
+echo "Run /clear -> followed by /vader:exec to start execution."

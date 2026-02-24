@@ -18,7 +18,6 @@ FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$STATE_FILE")
 export MAX_ITERATIONS
 MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
 STATUS=$(echo "$FRONTMATTER" | grep '^status:' | sed 's/status: *//')
-
 if [[ "$STATUS" == "done" ]]; then
   echo "Error: This plan is already completed." >&2
   exit 1
@@ -29,8 +28,10 @@ TEMP_FILE="${STATE_FILE}.tmp.$$"
 sed "s/^status: .*/status: executing/" "$STATE_FILE" > "$TEMP_FILE"
 mv "$TEMP_FILE" "$STATE_FILE"
 
-# Compose the prompt — use quoted heredoc to avoid shell expansion of plan content
-cat <<'PROMPT'
+# Write prompt to file for ralph-wiggum
+PROMPT_FILE=".claude/vader/prompt.local.md"
+mkdir -p "$(dirname "$PROMPT_FILE")"
+cat <<'PROMPT' > "$PROMPT_FILE"
 You are executing a vader plan. Work through ALL milestones sequentially.
 
 STATE FILE: .claude/vader/plan.local.md
@@ -60,3 +61,5 @@ IMPORTANT:
 - Each milestone must be committed separately
 - Always verify your work before claiming completion
 PROMPT
+
+echo "$PROMPT_FILE"

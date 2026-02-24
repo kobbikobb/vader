@@ -45,7 +45,7 @@ Run the setup script to compose the ralph-wiggum prompt:
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-exec.sh"
 ```
 
-Capture the output - this is the composed prompt.
+The output is the path to the prompt file. Read it to get the composed prompt.
 
 ## Step 4: Launch Ralph Loop
 
@@ -54,7 +54,7 @@ Read the `max_iterations` from the plan file frontmatter.
 Invoke the ralph-wiggum loop using the Skill tool:
 
 - skill: `ralph-wiggum:ralph-loop`
-- args: `<composed-prompt> --max-iterations <max_iterations> --completion-promise 'Hurra Vader has Triumphed'`
+- args: `<prompt-file-contents> --max-iterations <max_iterations> --completion-promise 'Hurra Vader has Triumphed'`
 
 The ralph-wiggum loop will handle the rest. Claude will work through milestones sequentially,
 committing each one and updating the state file until all milestones are complete.
