@@ -30,6 +30,7 @@ claude --plugin-dir .
 **Skills** (`skills/*/SKILL.md`): Each slash command (`/vader`, `/vader:exec`, `/vader:status`, `/vader:cancel`, `/vader:help`) is a SKILL.md with YAML frontmatter declaring allowed tools.
 
 **Scripts** (`scripts/`): Bash scripts called by skills:
+
 - `setup-plan.sh` — writes the plan state file from wizard output (title, scope, constraints, milestones JSON, max_iterations)
 - `setup-exec.sh` — reads plan state file and composes a single ralph-wiggum prompt covering all milestones
 - `check-permissions.sh` — detects permission mode, nudges toward `--dangerously-skip-permissions`

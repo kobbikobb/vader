@@ -94,4 +94,6 @@ Once confirmed, call the setup script:
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-plan.sh" "<title>" "<scope>" "<constraints>" "<success_criteria>" '<milestones_json>' <max_iterations>
 ```
 
-Tell the user: **Run `/vader:exec` to start execution.**
+Tell the user: **Run `/clear` first to free up context, then `/vader:exec` to start execution.**
+
+**YOUR JOB IS DONE.** Do NOT invoke `/vader:exec` or any other skill. Do NOT continue working. Simply deliver the message above and stop.
