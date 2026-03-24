@@ -94,7 +94,8 @@ EOF
 
 @test "should fail when plan status is done" {
   create_plan_file
-  sed -i.bak 's/status: planned/status: done/' .claude/vader/plan.local.md
+  sed 's/status: planned/status: done/' .claude/vader/plan.local.md > .claude/vader/plan.local.md.tmp
+  mv .claude/vader/plan.local.md.tmp .claude/vader/plan.local.md
 
   run "$SCRIPT"
 

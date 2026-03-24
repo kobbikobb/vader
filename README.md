@@ -4,13 +4,19 @@ A strict, opinionated wizard-driven workflow that wraps [ralph-wiggum](https://g
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
-- [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) plugin
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (includes ralph-wiggum)
 
 ## Installation
 
 ```text
 /plugin install vader@kobbikobb/vader
+```
+
+First-time setup requires adding the marketplace:
+
+```text
+/plugin marketplace add kobbikobb/vader
+/plugin install vader@vader
 ```
 
 ## Usage
@@ -78,6 +84,7 @@ State is stored in `.claude/vader/plan.local.md` (gitignored, ephemeral session 
 - Use `--dangerously-skip-permissions` for uninterrupted execution
 - Keep milestones small and verifiable
 - Each milestone should have clear success criteria
+- If execution is interrupted mid-milestone, run `/vader:status` to check progress, then `/vader:exec` to resume from where it left off
 
 ## License
 
