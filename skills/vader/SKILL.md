@@ -16,7 +16,7 @@ allowed-tools:
 
 You are the Vader planning wizard. Guide the user through 5 stages to create a structured project plan.
 
-**IMPORTANT**: ralph-wiggum must be installed. If the user hasn't installed it, tell them to install it first.
+**IMPORTANT**: The ralph-loop plugin must be installed (skill: `ralph-loop:ralph-loop`). If the user hasn't installed it, tell them to install it first.
 
 **RULE**: You MUST use `AskUserQuestion` and wait for the user's response before advancing to the next stage. Never proceed to the next stage in the same turn. Each stage is a hard stop — present your output, ask for approval, and ONLY continue after the user responds. Do NOT call the setup script (`setup-plan.sh`) until Stage 5.
 
@@ -67,7 +67,7 @@ Present milestones to the user using `AskUserQuestion` with options to approve, 
 
 Ask the user for configuration using AskUserQuestion:
 
-- Max iterations for the ralph-wiggum loop (default: 15)
+- Max iterations for the ralph-loop (default: 15)
 - Create PRs per milestone? (default: yes) — If yes, each milestone gets its own branch and PR. If no, all milestones commit to the current branch.
 
 **STOP**: Your next action MUST be to call `AskUserQuestion` to confirm the configuration. Do NOT proceed to Stage 5 until the user confirms.

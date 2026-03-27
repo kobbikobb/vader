@@ -19,7 +19,7 @@ export MAX_ITERATIONS
 MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
 STATUS=$(echo "$FRONTMATTER" | grep '^status:' | sed 's/status: *//')
 CREATE_PRS=$(echo "$FRONTMATTER" | grep '^create_prs:' | sed 's/create_prs: *//')
-CREATE_PRS="${CREATE_PRS:-false}"
+CREATE_PRS="${CREATE_PRS:-true}"
 
 if [[ "$STATUS" == "done" ]]; then
   echo "Error: This plan is already completed." >&2
@@ -36,13 +36,13 @@ if [[ "$CREATE_PRS" == "true" ]]; then
   BRANCH_INSTRUCTIONS='## Branch & PR Strategy
 
 For EACH milestone:
-- Before starting: `git checkout main && git checkout -b vader/<milestone-slug>`
-- After committing: `git push -u origin vader/<milestone-slug>`
-
-After ALL milestones are complete, create a PR for each milestone branch using:
-```
-gh pr create --head vader/<milestone-slug> --base main --title "<milestone name>" --body "<summary>"
-```'
+- Before starting: `git checkout main && git pull && git checkout -b vader/<milestone-slug>`
+- After committing: push and create a PR immediately:
+  ```
+  git push -u origin vader/<milestone-slug>
+  gh pr create --head vader/<milestone-slug> --base main --title "<milestone name>" --body "<summary>"
+  ```
+- Then switch back to main before starting the next milestone'
 else
   BRANCH_INSTRUCTIONS='## Branch Strategy
 
@@ -95,10 +95,11 @@ Before committing, review your own diff and check:
 - Are all error paths handled? Any new exceptions that callers don't expect?
 - Did you update ALL variants of the code you changed? (legacy versions, feature-flagged paths)
 
-### 5. Commit
+### 5. Commit & Ship
 - Commit with message: vader: milestone N - [name]
+- If create_prs is enabled: push the branch and create a PR (see Branch & PR Strategy above)
 - Update current_milestone in .claude/vader/plan.local.md (increment by 1)
-- Move to the next milestone
+- Switch back to main before starting the next milestone
 
 After ALL milestones are complete:
 1. Update status to "done" in .claude/vader/plan.local.md
