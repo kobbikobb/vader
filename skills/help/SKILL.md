@@ -31,17 +31,17 @@ Vader is an opinionated wizard-driven workflow that wraps ralph-wiggum to plan a
    - Describe your project
    - Review and refine the plan
    - Split into milestones
-   - Configure iteration limits
+   - Configure iteration limits and PR creation
 2. **Execute**: Run `/vader:exec` to start execution
-   - Vader composes a prompt and launches a ralph-wiggum loop
-   - Claude works through milestones sequentially
-   - Each milestone is committed separately
+   - Each milestone gets its own branch (if PR creation is enabled)
+   - Lint, format, typecheck, and tests run before each commit
+   - PRs are created after all milestones complete
 3. **Monitor**: Run `/vader:status` to check progress
 4. **Cancel**: Run `/vader:cancel` to abort if needed
 
 ### Requirements
 
-- **ralph-wiggum** plugin must be installed
+- **ralph-wiggum** plugin (optional — vader falls back to direct execution)
 - Best with `--dangerously-skip-permissions` for uninterrupted execution
 
 ### State

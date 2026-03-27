@@ -68,6 +68,7 @@ Present milestones to the user using `AskUserQuestion` with options to approve, 
 Ask the user for configuration using AskUserQuestion:
 
 - Max iterations for the ralph-wiggum loop (default: 15)
+- Create PRs per milestone? (default: yes) — If yes, each milestone gets its own branch and PR. If no, all milestones commit to the current branch.
 
 **STOP**: Your next action MUST be to call `AskUserQuestion` to confirm the configuration. Do NOT proceed to Stage 5 until the user confirms.
 
@@ -91,8 +92,10 @@ Present a summary of the full plan to the user: title, scope, constraints, miles
 Once confirmed, call the setup script:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/setup-plan.sh" "<title>" "<scope>" "<constraints>" "<success_criteria>" '<milestones_json>' <max_iterations>
+"${CLAUDE_PLUGIN_ROOT}/scripts/setup-plan.sh" "<title>" "<scope>" "<constraints>" "<success_criteria>" '<milestones_json>' <max_iterations> <create_prs>
 ```
+
+Where `<create_prs>` is `true` or `false`.
 
 Tell the user: **Run `/clear` first to free up context, then `/vader:exec` to start execution.**
 

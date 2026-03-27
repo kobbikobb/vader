@@ -11,6 +11,7 @@ CONSTRAINTS="${3:?Error: constraints are required}"
 SUCCESS_CRITERIA="${4:?Error: success criteria are required}"
 MILESTONES_JSON="${5:?Error: milestones JSON is required}"
 MAX_ITERATIONS="${6:-15}"
+CREATE_PRS="${7:-true}"
 
 # Validate max_iterations is a number
 if ! [[ "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
@@ -47,6 +48,7 @@ status: planned
 current_milestone: 0
 total_milestones: $TOTAL_MILESTONES
 max_iterations: $MAX_ITERATIONS
+create_prs: $CREATE_PRS
 created_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ---
 FRONTMATTER

@@ -4,7 +4,8 @@ A strict, opinionated wizard-driven workflow that wraps [ralph-wiggum](https://g
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (includes ralph-wiggum)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
+- [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) plugin (optional — vader falls back to direct execution if not installed)
 
 ## Installation
 
@@ -32,7 +33,7 @@ The planning wizard guides you through:
 - **Scope** - Describe your project, Claude explores the codebase
 - **Plan** - Review files to add/change
 - **Milestones** - Split into verifiable milestones
-- **Config** - Set iteration limits
+- **Config** - Set iteration limits, enable/disable PR creation per milestone
 - **Save** - Persist the plan
 
 ### 2. Execute
@@ -41,7 +42,9 @@ The planning wizard guides you through:
 /vader:exec
 ```
 
-Launches a ralph-wiggum loop that works through milestones sequentially. Each milestone is committed separately with the message format: `vader: milestone N - [name]`
+Launches a loop that works through milestones sequentially. Each milestone is committed separately with the message format: `vader: milestone N - [name]`
+
+When PR creation is enabled (default), each milestone gets its own branch and PR.
 
 ### 3. Monitor
 
@@ -60,24 +63,31 @@ Launches a ralph-wiggum loop that works through milestones sequentially. Each mi
 | Command                | Description                        |
 | ---------------------- | ---------------------------------- |
 | `/vader [description]` | Start the planning wizard          |
-| `/vader:exec`          | Execute the plan via ralph-wiggum  |
+| `/vader:exec`          | Execute the plan                   |
 | `/vader:status`        | Show progress                      |
 | `/vader:cancel`        | Abort execution                    |
 | `/vader:help`          | Usage guide                        |
 
 ## How It Works
 
-Vader uses a single ralph-wiggum loop to execute all milestones. The loop prompt instructs Claude to:
+Vader executes all milestones in a single loop. For each milestone:
 
 1. Check the current milestone in the state file
-2. Implement the milestone (code + tests)
-3. Verify quality with a review subagent
-4. Commit the milestone
-5. Update the state file
-6. Move to the next milestone
-7. Signal completion when all milestones are done
+2. Create a branch (if PR creation is enabled)
+3. Implement the milestone (code + tests)
+4. Run lint, format, and typecheck to verify code quality
+5. Run tests
+6. Review the diff for obvious issues
+7. Commit and push
+8. Update the state file and move to the next milestone
+9. Create PRs after all milestones are complete (if enabled)
 
 State is stored in `.claude/vader/plan.local.md` (gitignored, ephemeral session state).
+
+## Execution Modes
+
+- **ralph-wiggum mode** (default): If the ralph-loop plugin is installed, vader delegates to it for iteration management
+- **Direct mode** (fallback): If ralph-loop is not available, vader executes the plan inline in the current session
 
 ## Tips
 
