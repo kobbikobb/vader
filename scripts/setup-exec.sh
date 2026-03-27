@@ -64,22 +64,50 @@ $BRANCH_INSTRUCTIONS
 
 For EACH milestone (starting from the current one):
 
-1. Read .claude/vader/plan.local.md to check current_milestone
-2. Implement the milestone (write code + tests)
-3. Run the project's lint, format, and typecheck commands to verify code quality
-4. Run tests to verify the milestone works
-5. Review your own diff for obvious issues (security, missing edge cases, unused code)
-6. Commit with message: vader: milestone N - [name]
-7. Update current_milestone in .claude/vader/plan.local.md (increment by 1)
-8. Move to the next milestone
+### 1. Plan
+- Read .claude/vader/plan.local.md to check current_milestone
+
+### 2. Implement
+- Write code + tests for the milestone
+- Every new public function/method MUST have a corresponding test
+- Search for all callers, variants, and related code paths of anything you change (e.g. legacy versions, feature-flagged variants, shared interfaces) and update them too
+
+### 3. Quality Gates (MUST ALL PASS before committing)
+
+Run these in order. If any fail, fix and re-run. Do NOT skip or commit with failures.
+
+a) **Lint & Format**: Run the project's lint and format commands (e.g. eslint, flake8, black, csharpier, etc.). Detect them from package.json scripts, Makefile targets, or CI config.
+
+b) **Typecheck**: Run the project's type checker if applicable (e.g. tsc --noEmit, mypy, dotnet build).
+
+c) **Codegen**: If you changed proto files, schema files, or any generated code, run the codegen/build step (e.g. protoc, make build-java-migrations, graphql-codegen). Check CI config for codegen verification steps.
+
+d) **Tests**: Run unit tests for the files you changed. Verify exit code is 0. If integration tests exist and are runnable locally, run those too.
+
+e) **Test coverage check**: Verify that every new public function/method you added has at least one test. If not, write the missing tests now.
+
+### 4. Self-Review
+
+Before committing, review your own diff and check:
+- Does this change make any existing feature redundant or duplicate? If so, reconcile (remove the duplicate or differentiate the behavior).
+- Are there stale closures in React hooks? (useCallback/useMemo with missing deps closing over mutable state)
+- Does any changed SQL use the right operator for the data type? (e.g. ->> for JSON objects vs arrays)
+- Are all error paths handled? Any new exceptions that callers don't expect?
+- Did you update ALL variants of the code you changed? (legacy versions, feature-flagged paths)
+
+### 5. Commit
+- Commit with message: vader: milestone N - [name]
+- Update current_milestone in .claude/vader/plan.local.md (increment by 1)
+- Move to the next milestone
 
 After ALL milestones are complete:
 1. Update status to "done" in .claude/vader/plan.local.md
 2. Output: <promise>Hurra Vader has Triumphed</promise>
 
-IMPORTANT:
+## Hard Rules
 - Do NOT output the promise until ALL milestones are genuinely complete
-- If tests or lint fail, fix them before moving on
+- Do NOT commit if lint, typecheck, or tests fail — fix first
+- Do NOT skip quality gates — they catch real CI failures
 - Each milestone must be committed separately
 - Always verify your work before claiming completion
 PROMPT
