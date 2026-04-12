@@ -2,9 +2,11 @@
 
 # Compose the ralph-wiggum prompt from the vader plan state file
 # Reads .claude/vader/plan.local.md and outputs the prompt to stdout
+# Inlines executor and verifier agent personas into the prompt
 
 set -euo pipefail
 
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_FILE=".claude/vader/plan.local.md"
 
 if [[ ! -f "$STATE_FILE" ]]; then
@@ -18,12 +20,22 @@ FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$STATE_FILE")
 export MAX_ITERATIONS
 MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
 STATUS=$(echo "$FRONTMATTER" | grep '^status:' | sed 's/status: *//')
-CREATE_PRS=$(echo "$FRONTMATTER" | grep '^create_prs:' | sed 's/create_prs: *//')
+CREATE_PRS=$(echo "$FRONTMATTER" | grep '^create_prs:' | sed 's/create_prs: *//' || true)
 CREATE_PRS="${CREATE_PRS:-true}"
 
 if [[ "$STATUS" == "done" ]]; then
   echo "Error: This plan is already completed." >&2
   exit 1
+fi
+
+# Read agent personas
+EXECUTOR_PERSONA=""
+VERIFIER_PERSONA=""
+if [[ -f "$PLUGIN_ROOT/agents/executor.md" ]]; then
+  EXECUTOR_PERSONA=$(cat "$PLUGIN_ROOT/agents/executor.md")
+fi
+if [[ -f "$PLUGIN_ROOT/agents/verifier.md" ]]; then
+  VERIFIER_PERSONA=$(cat "$PLUGIN_ROOT/agents/verifier.md")
 fi
 
 # Update status to executing
@@ -51,7 +63,7 @@ fi
 
 # Output prompt directly to stdout
 cat <<PROMPT
-You are executing a vader plan. Work through ALL milestones sequentially.
+You are executing a vader plan. Work through ALL milestones sequentially using specialized agents.
 
 STATE FILE: .claude/vader/plan.local.md
 
@@ -60,46 +72,38 @@ Check the frontmatter for current_milestone and total_milestones.
 
 $BRANCH_INSTRUCTIONS
 
+## Agent Personas
+
+Use the following personas when spawning agents via the Agent tool.
+
+### Executor
+
+${EXECUTOR_PERSONA}
+
+### Verifier
+
+${VERIFIER_PERSONA}
+
 ## Instructions
 
 For EACH milestone (starting from the current one):
 
-### 1. Plan
-- Read .claude/vader/plan.local.md to check current_milestone
-
-### 2. Implement
-- Write code + tests for the milestone
-- Every new public function/method MUST have a corresponding test
-- Search for all callers, variants, and related code paths of anything you change (e.g. legacy versions, feature-flagged variants, shared interfaces) and update them too
-
-### 3. Quality Gates (MUST ALL PASS before committing)
-
-Run these in order. If any fail, fix and re-run. Do NOT skip or commit with failures.
-
-a) **Lint & Format**: Run the project's lint and format commands (e.g. eslint, flake8, black, csharpier, etc.). Detect them from package.json scripts, Makefile targets, or CI config.
-
-b) **Typecheck**: Run the project's type checker if applicable (e.g. tsc --noEmit, mypy, dotnet build).
-
-c) **Codegen**: If you changed proto files, schema files, or any generated code, run the codegen/build step (e.g. protoc, make build-java-migrations, graphql-codegen). Check CI config for codegen verification steps.
-
-d) **Tests**: Run unit tests for the files you changed. Verify exit code is 0. If integration tests exist and are runnable locally, run those too.
-
-e) **Test coverage check**: Verify that every new public function/method you added has at least one test. If not, write the missing tests now.
-
-### 4. Self-Review
-
-Before committing, review your own diff and check:
-- Does this change make any existing feature redundant or duplicate? If so, reconcile (remove the duplicate or differentiate the behavior).
-- Are there stale closures in React hooks? (useCallback/useMemo with missing deps closing over mutable state)
-- Does any changed SQL use the right operator for the data type? (e.g. ->> for JSON objects vs arrays)
-- Are all error paths handled? Any new exceptions that callers don't expect?
-- Did you update ALL variants of the code you changed? (legacy versions, feature-flagged paths)
-
-### 5. Commit & Ship
-- Commit with message: vader: milestone N - [name]
-- If create_prs is enabled: push the branch and create a PR (see Branch & PR Strategy above)
-- Update current_milestone in .claude/vader/plan.local.md (increment by 1)
-- Switch back to main before starting the next milestone
+1. Read .claude/vader/plan.local.md to check current_milestone
+2. Spawn an **Executor** agent using the Agent tool:
+   - Include the Executor persona above in the agent prompt
+   - Include the milestone scope, files, and success criteria from the plan
+   - The Executor implements the milestone, writes tests, and runs quality gates (lint, typecheck, tests)
+3. After the Executor completes, spawn a **Verifier** agent using the Agent tool:
+   - Include the Verifier persona above in the agent prompt
+   - Include the milestone success criteria and a summary of what was implemented
+   - The Verifier validates the work and reports approve or needs-fix
+4. If the Verifier reports needs-fix, spawn a new Executor agent with the issues to fix
+   - Maximum 3 Executor-Verifier cycles per milestone
+   - If issues persist after 3 cycles, stop and report the problem
+5. Commit with message: vader: milestone N - [name]
+6. If create_prs is enabled: push the branch and create a PR (see Branch & PR Strategy above)
+7. Update current_milestone in .claude/vader/plan.local.md (increment by 1)
+8. Switch back to main before starting the next milestone
 
 After ALL milestones are complete:
 1. Update status to "done" in .claude/vader/plan.local.md
@@ -110,5 +114,6 @@ After ALL milestones are complete:
 - Do NOT commit if lint, typecheck, or tests fail — fix first
 - Do NOT skip quality gates — they catch real CI failures
 - Each milestone must be committed separately
-- Always verify your work before claiming completion
+- Always verify work through the Verifier agent before committing
+- If the Verifier keeps rejecting after 3 cycles, stop execution and report
 PROMPT

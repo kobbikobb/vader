@@ -1,6 +1,6 @@
 # Vader
 
-A strict, opinionated wizard-driven workflow that wraps [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) to plan and execute multi-milestone software projects with [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+A strict, opinionated wizard-driven workflow that wraps [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) to plan and execute multi-milestone software projects with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), using specialized agents for each phase of work.
 
 ## Requirements
 
@@ -30,9 +30,9 @@ First-time setup requires adding the marketplace:
 
 The planning wizard guides you through:
 
-- **Scope** - Describe your project, Claude explores the codebase
-- **Plan** - Review files to add/change
-- **Milestones** - Split into verifiable milestones
+- **Scope** - A Researcher agent explores the codebase and surfaces risks
+- **Plan** - A Planner agent drafts the implementation with dependencies
+- **Milestones** - Split into verifiable milestones (you review and refine)
 - **Config** - Set iteration limits, enable/disable PR creation per milestone
 - **Save** - Persist the plan
 
@@ -42,7 +42,12 @@ The planning wizard guides you through:
 /vader:exec
 ```
 
-Launches a loop that works through milestones sequentially. Each milestone is committed separately with the message format: `vader: milestone N - [name]`
+Launches a loop that works through milestones sequentially. For each milestone:
+
+1. An **Executor** agent implements the changes and writes tests
+2. A **Verifier** agent validates the work (goal met, tests pass, no regressions)
+3. If the Verifier finds issues, the Executor fixes them (up to 3 cycles)
+4. Milestone is committed with message: `vader: milestone N - [name]`
 
 When PR creation is enabled (default), each milestone gets its own branch and PR.
 
@@ -68,19 +73,24 @@ When PR creation is enabled (default), each milestone gets its own branch and PR
 | `/vader:cancel`        | Abort execution                    |
 | `/vader:help`          | Usage guide                        |
 
+## Agents
+
+Vader uses four specialized agents defined in `agents/*.md`:
+
+| Agent      | Phase     | Responsibility                                        |
+| ---------- | --------- | ----------------------------------------------------- |
+| Researcher | Planning  | Explores codebase, finds patterns, surfaces risks     |
+| Planner    | Planning  | Breaks project into dependency-ordered milestones     |
+| Executor   | Execution | Implements milestone, writes tests, runs them         |
+| Verifier   | Execution | Validates goal achieved, checks quality and security  |
+
+Agent personas are customizable — edit the markdown files in `agents/` to match your team's conventions and standards.
+
 ## How It Works
 
-Vader executes all milestones in a single loop. For each milestone:
+**Planning phase** (`/vader`): The wizard spawns a Researcher agent to explore the codebase, then a Planner agent to draft the implementation plan. You review and refine through interactive stages.
 
-1. Check the current milestone in the state file
-2. Create a branch (if PR creation is enabled)
-3. Implement the milestone (code + tests)
-4. Run lint, format, and typecheck to verify code quality
-5. Run tests
-6. Review the diff for obvious issues
-7. Commit and push
-8. Update the state file and move to the next milestone
-9. Create PRs after all milestones are complete (if enabled)
+**Execution phase** (`/vader:exec`): A loop works through milestones. For each milestone, it spawns an Executor agent to implement and a Verifier agent to validate. The Verifier checks that the milestone goal was actually achieved — not just that code was written. If verification fails, the Executor gets another attempt (up to 3 cycles). When PR creation is enabled, each milestone gets its own branch and PR.
 
 State is stored in `.claude/vader/plan.local.md` (gitignored, ephemeral session state).
 
@@ -94,6 +104,7 @@ State is stored in `.claude/vader/plan.local.md` (gitignored, ephemeral session 
 - Use `--dangerously-skip-permissions` for uninterrupted execution
 - Keep milestones small and verifiable
 - Each milestone should have clear success criteria
+- Customize agent personas in `agents/*.md` to match your team's conventions
 - If execution is interrupted mid-milestone, run `/vader:status` to check progress, then `/vader:exec` to resume from where it left off
 
 ## License
