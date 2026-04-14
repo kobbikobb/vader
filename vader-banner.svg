@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200" shape-rendering="crispEdges">
+  <defs>
+    <style>
+      .banner-bg { fill: #0d1117; }
+      .title { fill: #e6edf3; font: bold 48px 'Segoe UI', system-ui, sans-serif; letter-spacing: 6px; }
+      .tagline { fill: #8b949e; font: 16px 'Segoe UI', system-ui, sans-serif; letter-spacing: 1px; }
+      .separator { fill: #e94560; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect class="banner-bg" width="800" height="200" rx="6"/>
+
+  <!-- Icon at left — scaled up 5x from 32x32 grid -->
+  <g transform="translate(40, 20) scale(5)">
+    <!-- Helmet dome -->
+    <rect x="12" y="2" width="8" height="1" fill="#22263a"/>
+    <rect x="10" y="3" width="12" height="1" fill="#22263a"/>
+    <rect x="8" y="4" width="16" height="1" fill="#1e2235"/>
+    <rect x="7" y="5" width="18" height="1" fill="#1e2235"/>
+    <rect x="6" y="6" width="20" height="1" fill="#1a1e30"/>
+    <rect x="5" y="7" width="22" height="1" fill="#1a1e30"/>
+    <rect x="5" y="8" width="22" height="1" fill="#181c2c"/>
+
+    <!-- Helmet shine -->
+    <rect x="12" y="3" width="4" height="1" fill="#2d3250"/>
+    <rect x="10" y="4" width="3" height="1" fill="#2d3250"/>
+    <rect x="9" y="5" width="2" height="1" fill="#282c44"/>
+
+    <!-- Brow ridge -->
+    <rect x="4" y="9" width="24" height="1" fill="#14182a"/>
+    <rect x="4" y="10" width="24" height="1" fill="#161a2e"/>
+
+    <!-- Left eye -->
+    <rect x="6" y="10" width="7" height="1" fill="#c13d4b"/>
+    <rect x="7" y="11" width="6" height="1" fill="#e94560"/>
+    <rect x="8" y="12" width="5" height="1" fill="#e94560"/>
+    <rect x="9" y="13" width="3" height="1" fill="#c13d4b"/>
+
+    <!-- Right eye -->
+    <rect x="19" y="10" width="7" height="1" fill="#c13d4b"/>
+    <rect x="19" y="11" width="6" height="1" fill="#e94560"/>
+    <rect x="19" y="12" width="5" height="1" fill="#e94560"/>
+    <rect x="20" y="13" width="3" height="1" fill="#c13d4b"/>
+
+    <!-- Eye glow -->
+    <rect x="8" y="11" width="3" height="1" fill="#ff6b7a"/>
+    <rect x="20" y="11" width="3" height="1" fill="#ff6b7a"/>
+
+    <!-- Nose bridge -->
+    <rect x="14" y="10" width="4" height="1" fill="#14182a"/>
+    <rect x="14" y="11" width="4" height="1" fill="#161a2e"/>
+    <rect x="14" y="12" width="4" height="1" fill="#161a2e"/>
+    <rect x="15" y="13" width="2" height="1" fill="#14182a"/>
+
+    <!-- Cheeks -->
+    <rect x="4" y="11" width="2" height="3" fill="#181c2c"/>
+    <rect x="26" y="11" width="2" height="3" fill="#181c2c"/>
+    <rect x="5" y="14" width="22" height="1" fill="#14182a"/>
+
+    <!-- Mouth grill -->
+    <rect x="8" y="15" width="16" height="1" fill="#1a1e30"/>
+    <rect x="9" y="16" width="14" height="1" fill="#161a2e"/>
+    <rect x="10" y="17" width="12" height="1" fill="#1a1e30"/>
+    <rect x="11" y="18" width="10" height="1" fill="#161a2e"/>
+    <rect x="12" y="19" width="8" height="1" fill="#1a1e30"/>
+    <rect x="13" y="20" width="6" height="1" fill="#14182a"/>
+
+    <!-- Grill lines -->
+    <rect x="10" y="15" width="1" height="4" fill="#0f1322"/>
+    <rect x="13" y="15" width="1" height="5" fill="#0f1322"/>
+    <rect x="16" y="15" width="1" height="5" fill="#0f1322"/>
+    <rect x="18" y="15" width="1" height="5" fill="#0f1322"/>
+    <rect x="21" y="15" width="1" height="4" fill="#0f1322"/>
+
+    <!-- Chin -->
+    <rect x="14" y="21" width="4" height="1" fill="#14182a"/>
+  </g>
+
+  <!-- Title text -->
+  <text x="280" y="90" class="title">VADER</text>
+
+  <!-- Red accent line -->
+  <rect x="280" y="105" width="60" height="3" rx="1" class="separator"/>
+
+  <!-- Tagline -->
+  <text x="280" y="132" class="tagline">Plan it. Break it into milestones. Build it. Verify it. Ship it.</text>
+
+  <!-- Subtle descriptor -->
+  <text x="280" y="158" class="tagline" style="fill: #484f58;">A Claude Code plugin for structured, multi-milestone projects</text>
+</svg>
