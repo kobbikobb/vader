@@ -12,7 +12,7 @@
       "name": "vader",
       "source": "./",
       "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects.",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "author": {
         "name": "Jakob Jonasson"
       },
