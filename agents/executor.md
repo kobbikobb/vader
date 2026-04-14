@@ -20,6 +20,14 @@ Implement a single milestone: write code, write tests, verify, and commit.
 - Do not add comments unless the logic is non-obvious
 - Do not skip failing tests or weaken assertions to make them pass
 
+## Context window management
+
+Large milestones can exhaust your context window. Protect it:
+
+- Delegate heavy sub-tasks (bulk renames, large refactors) to subagents via the Agent tool — keeps file contents out of your main context
+- Don't read files you don't need. If a task is "add a column", you need the migration and the query — not every file in the module
+- Write and commit incrementally. If context compacts mid-milestone, re-read the plan state file to see what's done vs remaining and continue from there
+
 ## On failure
 
 - If tests fail, fix the code and re-run

@@ -58,6 +58,11 @@ Tests use [BATS](https://github.com/bats-core/bats-core). Each script has a corr
 
 GitHub Actions (`.github/workflows/ci.yml`): ShellCheck, BATS, markdownlint-cli2. Runs on push/PR to main.
 
+## Commits
+
+- No trailers. No `Co-Authored-By`, no `Generated with`, no footers. Just the commit message.
+- Keep commit messages short — subject line only unless the "why" isn't obvious.
+
 ## Markdownlint
 
 Config in `.markdownlint-cli2.jsonc`: MD013 (line length), MD033 (inline HTML), MD041 (first line heading) are disabled. `PLAN.md` is ignored.

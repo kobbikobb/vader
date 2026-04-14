@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="800" height="420">
+  <style>
+    @keyframes type { from { width: 0 } to { width: 100% } }
+    @keyframes blink { 50% { opacity: 0 } }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+
+    .bg { fill: #0d1117; }
+    .title-bar { fill: #161b22; }
+    .btn-close { fill: #ff5f57; }
+    .btn-min { fill: #febc2e; }
+    .btn-max { fill: #28c840; }
+    .prompt { fill: #8b949e; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .cmd { fill: #e6edf3; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .accent { fill: #7c3aed; font: bold 14px 'SF Mono', 'Fira Code', monospace; }
+    .green { fill: #3fb950; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .dim { fill: #484f58; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .red { fill: #f85149; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .cyan { fill: #39d353; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .yellow { fill: #d29922; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .white { fill: #e6edf3; font: 14px 'SF Mono', 'Fira Code', monospace; }
+    .bold { fill: #e6edf3; font: bold 14px 'SF Mono', 'Fira Code', monospace; }
+
+    .cursor { animation: blink 1s step-end infinite; }
+
+    .line1 { animation: fadeIn 0.3s ease forwards; animation-delay: 0.5s; opacity: 0; }
+    .line2 { animation: fadeIn 0.3s ease forwards; animation-delay: 1.2s; opacity: 0; }
+    .line3 { animation: fadeIn 0.3s ease forwards; animation-delay: 1.8s; opacity: 0; }
+    .line4 { animation: fadeIn 0.3s ease forwards; animation-delay: 2.4s; opacity: 0; }
+    .line5 { animation: fadeIn 0.3s ease forwards; animation-delay: 3.0s; opacity: 0; }
+    .line6 { animation: fadeIn 0.3s ease forwards; animation-delay: 3.6s; opacity: 0; }
+    .line7 { animation: fadeIn 0.3s ease forwards; animation-delay: 4.2s; opacity: 0; }
+    .line8 { animation: fadeIn 0.3s ease forwards; animation-delay: 4.8s; opacity: 0; }
+    .line9 { animation: fadeIn 0.3s ease forwards; animation-delay: 5.4s; opacity: 0; }
+    .line10 { animation: fadeIn 0.3s ease forwards; animation-delay: 6.0s; opacity: 0; }
+    .line11 { animation: fadeIn 0.3s ease forwards; animation-delay: 6.6s; opacity: 0; }
+    .line12 { animation: fadeIn 0.3s ease forwards; animation-delay: 7.2s; opacity: 0; }
+    .line13 { animation: fadeIn 0.3s ease forwards; animation-delay: 7.8s; opacity: 0; }
+    .line14 { animation: fadeIn 0.3s ease forwards; animation-delay: 8.4s; opacity: 0; }
+    .line15 { animation: fadeIn 0.3s ease forwards; animation-delay: 9.0s; opacity: 0; }
+    .line16 { animation: fadeIn 0.3s ease forwards; animation-delay: 9.6s; opacity: 0; }
+  </style>
+
+  <!-- Window frame -->
+  <rect class="bg" width="800" height="420" rx="8"/>
+  <rect class="title-bar" width="800" height="36" rx="8"/>
+  <rect class="title-bar" y="8" width="800" height="28"/>
+  <circle class="btn-close" cx="20" cy="18" r="6"/>
+  <circle class="btn-min" cx="40" cy="18" r="6"/>
+  <circle class="btn-max" cx="60" cy="18" r="6"/>
+  <text x="400" y="23" text-anchor="middle" class="dim">vader</text>
+
+  <!-- Terminal content -->
+  <g transform="translate(20, 52)">
+
+    <!-- Command -->
+    <g class="line1">
+      <text y="0" class="prompt">$</text>
+      <text x="16" y="0" class="accent">/vader</text>
+      <text x="72" y="0" class="cmd"> Add user authentication with JWT</text>
+    </g>
+
+    <!-- Research phase -->
+    <g class="line2">
+      <text y="28" class="yellow">&#9670; Researching codebase...</text>
+    </g>
+    <g class="line3">
+      <text y="48" class="dim">  Found: Express app, PostgreSQL, 12 routes, no auth middleware</text>
+    </g>
+
+    <!-- Plan -->
+    <g class="line4">
+      <text y="76" class="yellow">&#9670; Planning milestones...</text>
+    </g>
+    <g class="line5">
+      <text y="96" class="bold">  Milestone 1: Auth middleware + JWT utils</text>
+    </g>
+    <g class="line6">
+      <text y="114" class="bold">  Milestone 2: Login/register routes + tests</text>
+    </g>
+    <g class="line7">
+      <text y="132" class="bold">  Milestone 3: Protect existing routes</text>
+    </g>
+
+    <!-- Approval -->
+    <g class="line8">
+      <text y="160" class="green">&#10003; Plan approved. Executing...</text>
+    </g>
+
+    <!-- Execution -->
+    <g class="line9">
+      <text y="188" class="cyan">&#9654; Milestone 1</text>
+      <text x="120" y="188" class="dim">Executor: implementing...</text>
+    </g>
+    <g class="line10">
+      <text y="208" class="dim">  Verifier: 4 tests pass, types clean, goal met</text>
+    </g>
+    <g class="line11">
+      <text y="226" class="green">  &#10003; Committed: vader: milestone 1 - auth middleware</text>
+    </g>
+
+    <g class="line12">
+      <text y="252" class="cyan">&#9654; Milestone 2</text>
+      <text x="120" y="252" class="dim">Executor: implementing...</text>
+    </g>
+    <g class="line13">
+      <text y="270" class="green">  &#10003; Committed: vader: milestone 2 - login routes</text>
+    </g>
+
+    <g class="line14">
+      <text y="296" class="cyan">&#9654; Milestone 3</text>
+      <text x="120" y="296" class="dim">Executor: implementing...</text>
+    </g>
+    <g class="line15">
+      <text y="314" class="green">  &#10003; Committed: vader: milestone 3 - protect routes</text>
+    </g>
+
+    <!-- Done -->
+    <g class="line16">
+      <text y="348" class="green">&#10003; All milestones complete. 3 commits pushed.</text>
+    </g>
+
+  </g>
+</svg>
