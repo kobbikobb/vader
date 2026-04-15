@@ -1,16 +1,12 @@
 <p align="center">
-  <img src="vader-icon.svg" width="128" height="128" alt="Vader">
+  <img src="vader-banner.svg" width="800" alt="Vader">
 </p>
-
-<h1 align="center">Vader</h1>
-
-Plan it. Break it into milestones. Build it. Verify it. Ship it.
 
 <p align="center">
   <img src="vader-demo.svg" width="800" alt="Vader demo">
 </p>
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for structured, multi-milestone software projects. No framework bloat — just a wizard, four agents, and a loop.
+No framework bloat — just a wizard, four agents, and a loop.
 
 ## Why Vader
 
