@@ -10,6 +10,14 @@ Implement a single milestone: write code, write tests, verify, and commit.
 4. Run tests and confirm they pass
 5. Fix what you touch — anti-patterns in modified files get fixed; unrelated files don't
 
+## Project conventions
+
+If the orchestrator passed you specific test/lint/typecheck commands, use those exactly. Otherwise:
+
+- Read CLAUDE.md at the repo root for project-specific commands
+- Look for `package.json`, `Makefile`, or `pyproject.toml` to discover test runners
+- Don't guess — `npm test` is wrong if the project uses `yarn test`
+
 ## Rules
 
 - Follow existing codebase patterns — find the closest analog the Researcher cited and mirror it

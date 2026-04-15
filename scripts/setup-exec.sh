@@ -89,21 +89,24 @@ ${VERIFIER_PERSONA}
 For EACH milestone (starting from the current one):
 
 1. Read .claude/vader/plan.local.md to check current_milestone
-2. Spawn an **Executor** agent using the Agent tool:
+2. If a CLAUDE.md exists at the repo root, read it to discover the project's test, lint, and typecheck commands. Pass these to both the Executor and Verifier so they use the right tooling.
+3. Spawn an **Executor** agent using the Agent tool:
    - Include the Executor persona above in the agent prompt
-   - Include the milestone scope, files, and success criteria from the plan
-   - The Executor implements the milestone, writes tests, and runs quality gates (lint, typecheck, tests)
-3. After the Executor completes, spawn a **Verifier** agent using the Agent tool:
+   - Include the milestone scope, files, and **scenarios** (Arrange/Act/Assert blocks) from the plan
+   - Include project-specific test/lint/typecheck commands discovered in step 2
+   - The Executor implements the milestone, writes tests mirroring each scenario, and runs quality gates
+4. After the Executor completes, spawn a **Verifier** agent using the Agent tool:
    - Include the Verifier persona above in the agent prompt
-   - Include the milestone success criteria and a summary of what was implemented
-   - The Verifier validates the work and reports approve or needs-fix
-4. If the Verifier reports needs-fix, spawn a new Executor agent with the issues to fix
+   - Include the milestone scenarios and a summary of what was implemented
+   - Include project-specific test/lint/typecheck commands
+   - The Verifier validates each scenario passes and reports approve or needs-fix
+5. If the Verifier reports needs-fix, spawn a new Executor agent with the issues to fix
    - Maximum 3 Executor-Verifier cycles per milestone
    - If issues persist after 3 cycles, stop and report the problem
-5. Commit with message: vader: milestone N - [name]
-6. If create_prs is enabled: push the branch and create a PR (see Branch & PR Strategy above)
-7. Update current_milestone in .claude/vader/plan.local.md (increment by 1)
-8. Switch back to main before starting the next milestone
+6. Commit with message: vader: milestone N - [name]
+7. If create_prs is enabled: push the branch and create a PR (see Branch & PR Strategy above)
+8. Update current_milestone in .claude/vader/plan.local.md (increment by 1)
+9. Switch back to main before starting the next milestone
 
 After ALL milestones are complete:
 1. Update status to "done" in .claude/vader/plan.local.md

@@ -76,3 +76,35 @@ teardown() {
   [ "$status" -eq 0 ]
   grep -q "session_id:" .claude/vader/plan.local.md
 }
+
+@test "should preserve Arrange/Act/Assert scenarios in plan file" {
+  MILESTONES='[{"name":"Auth","scope":"JWT auth","files":["src/auth.ts (add)"],"scenarios":[{"name":"Valid login returns JWT","arrange":"User exists","act":"POST /login","assert":"200 with JWT"}]}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  grep -q "Scenario: Valid login returns JWT" .claude/vader/plan.local.md
+  grep -q "Arrange: User exists" .claude/vader/plan.local.md
+  grep -q "Act: POST /login" .claude/vader/plan.local.md
+  grep -q "Assert: 200 with JWT" .claude/vader/plan.local.md
+}
+
+@test "should preserve simple check scenarios for infrastructure milestones" {
+  MILESTONES='[{"name":"CI","scope":"Setup CI","files":[".github/workflows/ci.yml (add)"],"scenarios":[{"name":"CI runs on push","check":"Push commit, see workflow run"}]}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  grep -q "Scenario: CI runs on push" .claude/vader/plan.local.md
+  grep -q "Check: Push commit, see workflow run" .claude/vader/plan.local.md
+}
+
+@test "should fall back to success_criteria if scenarios not provided" {
+  MILESTONES='[{"name":"Setup","scope":"Setup","files":[],"success_criteria":["Project builds","Tests pass"]}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  grep -q "Project builds" .claude/vader/plan.local.md
+  grep -q "Tests pass" .claude/vader/plan.local.md
+}

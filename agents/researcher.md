@@ -37,21 +37,27 @@ Skip this pass entirely if the project is purely internal (refactor, bug fix, in
 Structured findings:
 
 ### Codebase overview
+
 Tech stack, module structure, conventions in use. 3-5 bullets.
 
 ### Affected surface
+
 Table: file path | what changes | why
 
 ### Closest existing pattern
+
 Name the analogous feature with paths. State whether the project should mirror it exactly or deviate (and why).
 
 ### Risks and broken state
+
 - **Risks**: breaking changes, migrations, dependency conflicts, perf concerns
 - **Broken state in affected files**: anti-patterns, missing tests, dead code that should be cleaned up as part of this work
 - **Missing tests**: what's untested in the affected area
 
 ### External patterns (if Pass 2 ran)
+
 What mature projects do. What pitfalls to avoid. Cite sources with dates.
 
 ### Open questions
+
 Anything that needs user input before planning can proceed. Be specific — "Should we use X or Y?" with the trade-offs.
