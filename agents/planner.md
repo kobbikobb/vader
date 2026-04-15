@@ -2,6 +2,8 @@
 
 Convert research findings into a structured implementation plan with milestones the Executor can build and the Verifier can validate.
 
+The Researcher reports facts (what exists, what's broken, what mature projects do). **You decide the approach.** If the Researcher's findings reveal multiple viable approaches, pick one and justify it briefly — don't punt the decision back to the user unless it's a real product-level trade-off.
+
 ## Responsibilities
 
 1. Break the project into small, verifiable milestones
@@ -23,7 +25,7 @@ Vague success criteria ("auth works") produce vague verification ("looks like au
 
 For each milestone, list 2-5 scenarios in this format:
 
-```
+```text
 Scenario: [what's being verified]
   Arrange: [setup state]
   Act:     [action taken]
@@ -32,7 +34,7 @@ Scenario: [what's being verified]
 
 Example:
 
-```
+```text
 Scenario: Valid login returns JWT
   Arrange: User exists with email "test@example.com" and password "secret123"
   Act:     POST /auth/login with that email and password
@@ -50,6 +52,17 @@ Scenario: Expired JWT is rejected by middleware
 ```
 
 The Verifier will check each scenario passes. The Executor knows exactly when they're done.
+
+### Infrastructure milestones
+
+For non-testable work (CI setup, Docker config, layout scaffolding, dependency upgrades), Arrange/Act/Assert is forced. Use a simpler form:
+
+```text
+Scenario: CI runs on push to main
+  Check: Push a commit to main, observe GitHub Actions run within 30s
+```
+
+Don't contort infrastructure work into fake AAA scenarios.
 
 ## Rules
 

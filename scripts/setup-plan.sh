@@ -72,6 +72,7 @@ FRONTMATTER
     NAME=$(echo "$MILESTONE" | jq -r '.name')
     M_SCOPE=$(echo "$MILESTONE" | jq -r '.scope // empty')
     FILES=$(echo "$MILESTONE" | jq -r '.files[]? // empty')
+    SCENARIOS_LEN=$(echo "$MILESTONE" | jq -r '.scenarios | length // 0')
     CRITERIA=$(echo "$MILESTONE" | jq -r '.success_criteria[]? // empty')
 
     echo "## Milestone $((i + 1)): $NAME"
@@ -86,8 +87,16 @@ FRONTMATTER
       echo "- (to be determined)"
     fi
     echo ""
-    echo "### Success Criteria"
-    if [[ -n "$CRITERIA" ]]; then
+    echo "### Scenarios"
+    if [[ "$SCENARIOS_LEN" -gt 0 ]]; then
+      echo "$MILESTONE" | jq -r '.scenarios[] |
+        if .arrange then
+          "\n**Scenario: \(.name)**\n- Arrange: \(.arrange)\n- Act: \(.act)\n- Assert: \(.assert)"
+        else
+          "\n**Scenario: \(.name)**\n- Check: \(.check)"
+        end'
+    elif [[ -n "$CRITERIA" ]]; then
+      # Backward compatibility with success_criteria string lists
       echo "$MILESTONE" | jq -r '.success_criteria[] | "- \(.)"'
     else
       echo "- (to be determined)"
