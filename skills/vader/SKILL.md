@@ -81,7 +81,27 @@ Build the milestones JSON array. Each milestone object has:
   "name": "Milestone Name",
   "scope": "What this milestone covers",
   "files": ["path/file.ts (add)", "path/other.ts (change)"],
-  "success_criteria": ["Tests pass", "Feature works end-to-end"]
+  "scenarios": [
+    {
+      "name": "Valid login returns JWT",
+      "arrange": "User exists with email test@example.com and password secret123",
+      "act": "POST /auth/login with that email and password",
+      "assert": "Response is 200, body contains a JWT, JWT decodes to userId"
+    }
+  ]
+}
+```
+
+For infrastructure milestones where Arrange/Act/Assert is forced (CI setup, Docker config, layout scaffolding), use a simpler form:
+
+```json
+{
+  "scenarios": [
+    {
+      "name": "CI runs on push to main",
+      "check": "Push a commit to main, observe GitHub Actions run within 30s"
+    }
+  ]
 }
 ```
 
