@@ -6,7 +6,7 @@
   <img src="vader-demo.svg" width="800" alt="Vader demo">
 </p>
 
-No framework bloat — just a wizard, four agents, and a loop.
+No framework bloat — just a wizard, a handful of agents, and a loop.
 
 ## Why Vader
 
@@ -37,6 +37,14 @@ The wizard guides you through 5 stages, then:
 
 Walk away. Come back to committed, verified code.
 
+Got an existing feature branch you want to review concept by concept?
+
+```text
+/vader:refine
+```
+
+A Chunker groups the diff into topics. For each one: approve, discuss, edit, defer, jump, back, or skip. Edits go through an Editor and a Refine Verifier before a per-topic commit. Pushes to the PR at the end if one exists — never force.
+
 ## How It Works
 
 ```text
@@ -63,23 +71,28 @@ Walk away. Come back to committed, verified code.
 ## Commands
 
 | Command | What it does |
-|---|---|
+| --- | --- |
 | `/vader [description]` | Plan a project — interactive wizard |
 | `/vader:exec` | Execute the plan autonomously |
+| `/vader:refine` | Walk the current branch's diff topic by topic |
 | `/vader:status` | Check progress |
 | `/vader:cancel` | Abort and clean up |
 | `/vader:help` | Usage guide |
 
 ## Agents
 
-Four specialized agents, each a markdown file you can customize:
+Specialized agents, each a markdown file you can customize:
 
 | Agent | Phase | Job |
-|---|---|---|
+| --- | --- | --- |
 | **Researcher** | Planning | Explores codebase, finds patterns, surfaces risks |
 | **Planner** | Planning | Breaks project into dependency-ordered milestones |
 | **Executor** | Execution | Implements code and tests for one milestone |
 | **Verifier** | Execution | Validates the milestone goal was actually achieved |
+| **Chunker** | Refinement | Groups a diff into concept-level topics |
+| **Discusser** | Refinement | Answers questions about a topic (read-only) |
+| **Editor** | Refinement | Applies refinements within a topic's file scope |
+| **Refine Verifier** | Refinement | Checks an edit stayed in scope, no regressions |
 
 Edit `agents/*.md` to match your team's conventions.
 

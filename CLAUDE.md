@@ -27,26 +27,36 @@ claude --plugin-dir .
 
 **Plugin entry point**: `.claude-plugin/plugin.json` defines the plugin metadata.
 
-**Skills** (`skills/*/SKILL.md`): Each slash command (`/vader`, `/vader:exec`, `/vader:status`, `/vader:cancel`, `/vader:help`) is a SKILL.md with YAML frontmatter declaring allowed tools.
+**Skills** (`skills/*/SKILL.md`): Each slash command (`/vader`, `/vader:exec`, `/vader:refine`, `/vader:status`, `/vader:cancel`, `/vader:help`) is a SKILL.md with YAML frontmatter declaring allowed tools.
 
-**Agents** (`agents/*.md`): Specialized agent personas used during planning and execution:
+**Agents** (`agents/*.md`): Specialized agent personas used during planning, execution, and refinement:
 
-- `researcher.md` — explores codebase, finds patterns, surfaces risks (used in planning)
-- `planner.md` — breaks project into dependency-ordered milestones (used in planning)
-- `executor.md` — implements milestone code and tests (used per milestone in execution)
-- `verifier.md` — validates milestone goal was achieved (used per milestone in execution)
+- `researcher.md` — explores codebase, finds patterns, surfaces risks (planning)
+- `planner.md` — breaks project into dependency-ordered milestones (planning)
+- `executor.md` — implements milestone code and tests (execution)
+- `verifier.md` — validates milestone goal was achieved (execution)
+- `chunker.md` — groups a diff into concept-level topics (refinement)
+- `discusser.md` — answers questions about a topic, read-only (refinement)
+- `editor.md` — applies scoped refinements within a topic (refinement)
+- `refine-verifier.md` — checks an edit stayed in scope, no regressions (refinement)
 
-During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` inlines the Executor and Verifier personas into the ralph-wiggum prompt so the loop can spawn them as Agent subagents per milestone.
+During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` inlines the Executor and Verifier personas into the ralph-wiggum prompt so the loop can spawn them as Agent subagents per milestone. During refinement, `/vader:refine` reads each refine persona and spawns it via Task per topic.
 
 **Scripts** (`scripts/`): Bash scripts called by skills:
 
 - `setup-plan.sh` — writes the plan state file from wizard output (title, scope, constraints, milestones JSON, max_iterations)
 - `setup-exec.sh` — reads plan state file, inlines agent personas, and composes a single ralph-wiggum prompt covering all milestones
+- `setup-refine.sh` — resolves branch/base/PR, enforces clean tree + non-default branch, writes the refine state file (resumable per-branch)
 - `check-permissions.sh` — detects permission mode, nudges toward `--dangerously-skip-permissions`
 
 **Hooks** (`hooks/`): `session-start.sh` fires on SessionStart to warn if not in bypass-permissions mode.
 
-**State file**: `.claude/vader/plan.local.md` — YAML frontmatter (session_id, status, current_milestone, total_milestones, max_iterations) + markdown body with scope, constraints, milestones. Gitignored, ephemeral.
+**State files**:
+
+- `.claude/vader/plan.local.md` — plan state (session_id, status, current_milestone, total_milestones, max_iterations, create_prs) + scope/constraints/milestones body
+- `.claude/vader/refine.local.md` — refine state keyed on branch (branch, base, base_sha, head_sha, pr_number, topic counts) + topic checklist body
+
+Both are gitignored and ephemeral.
 
 **Key design constraint**: Ralph-wiggum's Stop hook exits the session, so per-milestone chaining is impossible. Instead, `/vader:exec` launches a **single** ralph-wiggum loop covering ALL milestones, with the prompt instructing Claude to work through them sequentially using Executor and Verifier agents.
 
