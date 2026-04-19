@@ -71,7 +71,9 @@ EOF
   git add a.txt
   git commit -q -m "seed"
   git branch feature
-  local wt="$TEST_DIR/../wt-feature"
+  local wt
+  wt=$(mktemp -d)
+  rm -rf "$wt"
   git worktree add -q "$wt" feature
   mkdir -p "$wt/.claude/vader"
   cat > "$wt/.claude/vader/refine.local.md" <<'EOF'
@@ -92,4 +94,31 @@ EOF
   [[ "$output" == *"0/2"* ]]
 
   git worktree remove -f "$wt" || rm -rf "$wt"
+}
+
+@test "should skip rows with status done" {
+  # Arrange
+  mkdir -p .claude/vader
+  cat > .claude/vader/refine.local.md <<'EOF'
+---
+status: done
+branch: "feature"
+resolved_topics: 3
+total_topics: 3
+---
+EOF
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+status: done
+current_milestone: 5
+total_milestones: 5
+---
+EOF
+
+  # Act
+  run "$SCRIPT"
+
+  # Assert
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }

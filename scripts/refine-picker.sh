@@ -49,10 +49,10 @@ refine_state_for() {
   if [[ ! -f "$f" ]]; then return; fi
   local status res tot
   status=$(awk -F': *' '$1 == "status" {gsub(/^"|"$/, "", $2); print $2; exit}' "$f")
-  res=$(awk -F': *' '$1 == "resolved_topics" {print $2; exit}' "$f")
-  tot=$(awk -F': *' '$1 == "total_topics" {print $2; exit}' "$f")
-  if [[ -z "$status" ]]; then return; fi
-  if [[ "${tot:-0}" -gt 0 ]]; then
+  res=$(awk -F': *' '$1 == "resolved_topics" {gsub(/^"|"$/, "", $2); print $2; exit}' "$f")
+  tot=$(awk -F': *' '$1 == "total_topics" {gsub(/^"|"$/, "", $2); print $2; exit}' "$f")
+  if [[ -z "$status" || "$status" == "done" ]]; then return; fi
+  if [[ "${tot:-0}" =~ ^[0-9]+$ && "${tot:-0}" -gt 0 ]]; then
     echo "${status} (${res:-0}/${tot})"
   else
     echo "$status"
@@ -67,7 +67,8 @@ cmd_list() {
     exit 1
   fi
 
-  # Collect candidates as "branch|pr|title" lines in a temp file.
+  # Collect candidates as TSV rows (branch<TAB>pr<TAB>title) in a temp file.
+  # Staying TSV end-to-end avoids title-contains-pipe corruption.
   local tmp
   tmp=$(mktemp)
 
@@ -75,8 +76,9 @@ cmd_list() {
     local prs
     prs=$(gh pr list --author @me --state open --json number,headRefName,title --limit 50 2>/dev/null || true)
     if [[ -n "$prs" && "$prs" != "[]" ]]; then
-      echo "$prs" | jq -r '.[] | [.headRefName, (.number|tostring), .title] | @tsv' \
-        | awk -F'\t' -v OFS='|' 'NF>=2 && $1 != "" {print $1, $2, $3}' >> "$tmp"
+      echo "$prs" \
+        | jq -r '.[] | select(.headRefName != null and .headRefName != "") | [.headRefName, (.number|tostring), .title] | @tsv' \
+        >> "$tmp"
     fi
   fi
 
@@ -93,14 +95,13 @@ cmd_list() {
     local ahead
     ahead=$(git rev-list --count "$base_ref..$br" 2>/dev/null || echo 0)
     if [[ "$ahead" -gt 0 ]]; then
-      # Append only if not already listed from PRs.
-      if ! awk -F'|' -v b="$br" '$1 == b {found=1; exit} END {exit !found}' "$tmp"; then
-        printf '%s||\n' "$br" >> "$tmp"
+      if ! grep -Fq -- "${br}"$'\t' "$tmp" 2>/dev/null; then
+        printf '%s\t\t\n' "$br" >> "$tmp"
       fi
     fi
   done < <(git for-each-ref --format='%(refname:short)' refs/heads/)
 
-  sort -u "$tmp" | while IFS='|' read -r br pr title; do
+  sort -u "$tmp" | while IFS=$'\t' read -r br pr title; do
     [[ -z "$br" ]] && continue
     local wt=""
     wt=$(worktree_for_branch "$br" || true)
@@ -122,13 +123,16 @@ cmd_resolve() {
     echo "$wt"
     return 0
   fi
-  # Suggest a sibling path next to the main worktree.
+  # Suggest a sibling path next to the main worktree (first entry in porcelain).
   local main_wt
   main_wt=$(git worktree list --porcelain | awk '$1 == "worktree" {print $2; exit}')
   local repo_name
   repo_name=$(basename "$main_wt")
   local safe_branch
   safe_branch=$(echo "$branch" | tr '/' '-' | tr -cd '[:alnum:]._-')
+  if [[ -z "$safe_branch" ]]; then
+    safe_branch="branch"
+  fi
   local suggested
   suggested="$(dirname "$main_wt")/${repo_name}-${safe_branch}"
   echo "NONE:$suggested"
@@ -140,6 +144,14 @@ cmd_create() {
   if [[ -e "$path" ]]; then
     echo "Error: path already exists: $path" >&2
     exit 1
+  fi
+  # Fetch remote-only branches so `git worktree add` can resolve them.
+  if ! git show-ref --verify --quiet "refs/heads/$branch"; then
+    if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+      git fetch origin "$branch:$branch" >&2 || true
+    elif git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+      git fetch origin "$branch:$branch" >&2 || true
+    fi
   fi
   git worktree add "$path" "$branch"
   echo "$path"

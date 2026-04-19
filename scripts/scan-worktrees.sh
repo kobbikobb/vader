@@ -34,17 +34,21 @@ while IFS= read -r line; do
     PLAN="$WT_PATH/.claude/vader/plan.local.md"
     if [[ -f "$PLAN" ]]; then
       S=$(get_field status "$PLAN")
-      CUR=$(get_field current_milestone "$PLAN")
-      TOT=$(get_field total_milestones "$PLAN")
-      printf 'plan\t%s\t%s\t%s\t%s/%s\t%s\n' "$WT_PATH" "${WT_BRANCH:-?}" "${S:-?}" "${CUR:-?}" "${TOT:-?}" "$MARK"
+      if [[ "$S" != "done" ]]; then
+        CUR=$(get_field current_milestone "$PLAN")
+        TOT=$(get_field total_milestones "$PLAN")
+        printf 'plan\t%s\t%s\t%s\t%s/%s\t%s\n' "$WT_PATH" "${WT_BRANCH:-?}" "${S:-?}" "${CUR:-?}" "${TOT:-?}" "$MARK"
+      fi
     fi
 
     REFINE="$WT_PATH/.claude/vader/refine.local.md"
     if [[ -f "$REFINE" ]]; then
       S=$(get_field status "$REFINE")
-      RES=$(get_field resolved_topics "$REFINE")
-      TOT=$(get_field total_topics "$REFINE")
-      printf 'refine\t%s\t%s\t%s\t%s/%s\t%s\n' "$WT_PATH" "${WT_BRANCH:-?}" "${S:-?}" "${RES:-?}" "${TOT:-?}" "$MARK"
+      if [[ "$S" != "done" ]]; then
+        RES=$(get_field resolved_topics "$REFINE")
+        TOT=$(get_field total_topics "$REFINE")
+        printf 'refine\t%s\t%s\t%s\t%s/%s\t%s\n' "$WT_PATH" "${WT_BRANCH:-?}" "${S:-?}" "${RES:-?}" "${TOT:-?}" "$MARK"
+      fi
     fi
 
     WT_PATH=""

@@ -31,7 +31,7 @@ Run the setup script:
 
 If it exits zero, parse stdout for: `branch`, `base`, `pr_number`, `changed_lines`, `large_diff`, `resuming`, `state_file`, then read `.claude/vader/refine.local.md` for full session state and proceed to Stage 2.
 
-If it exits non-zero with either "switch to a feature branch" or "nothing to refine", fall back to **Stage 1a: Pick a branch**. For any other error, stop and show it.
+If it exits with status 2, the current tree cannot be refined (on default branch, or no diff vs base). Fall back to **Stage 1a: Pick a branch**. For any other non-zero exit, stop and show the error.
 
 ### Stage 1a: Pick a branch
 
