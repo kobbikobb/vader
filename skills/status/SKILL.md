@@ -1,31 +1,31 @@
 ---
 name: status
-description: "Show current vader plan progress"
+description: "Show vader sessions across all worktrees in the current repo"
 disable-model-invocation: true
 allowed-tools:
+  - Bash(${CLAUDE_PLUGIN_ROOT}/scripts/scan-worktrees.sh:*)
   - Read(.claude/vader/plan.local.md)
+  - Read(.claude/vader/refine.local.md)
 ---
 
 # Vader Status
 
-Show the current vader plan progress.
+Show every in-flight vader session across all worktrees of the current repo, plus milestone detail for the current worktree's plan.
 
-Read the plan file:
+Run the scan:
 
-```text
-.claude/vader/plan.local.md
+```!
+"${CLAUDE_PLUGIN_ROOT}/scripts/scan-worktrees.sh"
 ```
 
-If the file does not exist, tell the user: "No active vader plan. Run `/vader` to create one."
+Output is TSV: `kind<TAB>worktree_path<TAB>branch<TAB>status<TAB>progress<TAB>marker`.
+`marker` is `*` for the current worktree, empty otherwise.
 
-Otherwise, display a summary:
+If output is empty, tell the user: "No active vader sessions. Run `/vader` to plan, or `/vader:refine` to refine a branch." Stop.
 
-- **Status**: planned / executing / done
-- **Progress**: milestone X of Y
-- **Plan title**: from the heading
-- **Milestones**: list each with completion status
+Otherwise:
 
-For each milestone, show:
-
-- Milestone number and name
-- Whether it's completed (current_milestone > milestone index), in progress (current_milestone == milestone index), or pending
+1. Render a short table grouped by kind (plan, refine). For each row show branch, status, progress, worktree path (relative if short), and flag the current worktree with `*`.
+2. If a `plan` row is marked `*`, also read `.claude/vader/plan.local.md` and append a milestone breakdown: for each milestone list number, name, and whether it is completed (`current_milestone > index`), in progress (`current_milestone == index`), or pending.
+3. If a `refine` row is marked `*`, also read `.claude/vader/refine.local.md` and append the topic checklist from the `## Topics` section so the user can see what's resolved, deferred, or pending in this worktree.
+4. Tell the user they can `cd` into another worktree and run `/vader:status` there to see its detail, or run `/vader:refine` there to resume refinement.

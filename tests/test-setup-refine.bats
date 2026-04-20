@@ -22,19 +22,19 @@ teardown() {
   rm -rf "$TEST_DIR" "$STUB_DIR"
 }
 
-@test "should abort when on default branch" {
+@test "should exit 2 (pickable) when on default branch" {
   run "$SCRIPT"
 
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 2 ]
   [[ "$output" == *"switch to a feature branch"* ]]
 }
 
-@test "should abort when no changes vs base" {
+@test "should exit 2 (pickable) when no changes vs base" {
   git checkout -q -b feature
 
   run "$SCRIPT"
 
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 2 ]
   [[ "$output" == *"nothing to refine"* ]]
 }
 

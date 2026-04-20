@@ -1,6 +1,6 @@
 {
   "name": "vader",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects using specialized agents.",
   "author": {
     "name": "Jakob Jonasson",

@@ -5,6 +5,7 @@ disable-model-invocation: true
 argument-hint: ""
 allowed-tools:
   - Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-refine.sh:*)
+  - Bash(${CLAUDE_PLUGIN_ROOT}/scripts/refine-picker.sh:*)
   - Bash(git:*)
   - Bash(gh:*)
   - Read
@@ -28,11 +29,40 @@ Run the setup script:
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-refine.sh"
 ```
 
-If it exits non-zero, stop and show the error.
+If it exits zero, parse stdout for: `branch`, `base`, `pr_number`, `changed_lines`, `large_diff`, `resuming`, `state_file`, then read `.claude/vader/refine.local.md` for full session state and proceed to Stage 2.
 
-Parse stdout for: `branch`, `base`, `pr_number`, `changed_lines`, `large_diff`, `resuming`, `state_file`.
+If it exits with status 2, the current tree cannot be refined (on default branch, or no diff vs base). Fall back to **Stage 1a: Pick a branch**. For any other non-zero exit, stop and show the error.
 
-Read `.claude/vader/refine.local.md` for full session state.
+### Stage 1a: Pick a branch
+
+The current worktree can't be refined here. Help the user pick another branch.
+
+Run:
+
+```!
+"${CLAUDE_PLUGIN_ROOT}/scripts/refine-picker.sh" list
+```
+
+Each line is TSV: `branch<TAB>pr_number<TAB>title<TAB>worktree_path<TAB>refine_state`. Empty fields are expected (no PR, no worktree yet, no active refine).
+
+If the output is empty, tell the user: "No feature branches or PRs to refine. Create a branch with commits first." Stop.
+
+Otherwise, present the candidates via `AskUserQuestion`. For each candidate show: branch name, PR number (if any), worktree path (if any), and active refine state (if any). Include an **Abort** option.
+
+When the user picks a branch, resolve its worktree:
+
+```!
+"${CLAUDE_PLUGIN_ROOT}/scripts/refine-picker.sh" resolve <branch>
+```
+
+- If output is a path (no `NONE:` prefix), tell the user that refine for `<branch>` lives in `<path>` and that they should run `cd <path> && claude`, then `/vader:refine` will resume there. Stop. Do not attempt to continue refine in the current session.
+
+- If output is `NONE:<suggested-path>`, no worktree exists. Ask via `AskUserQuestion`:
+  - **Create worktree** — run `"${CLAUDE_PLUGIN_ROOT}/scripts/refine-picker.sh" create <branch> <suggested-path>`, then print the same `cd <path> && claude` instruction as above. Stop.
+  - **Pick a different path** — user supplies a path; run `create` with that. Then print instructions. Stop.
+  - **Abort** — stop.
+
+**STOP**: After Stage 1a, do not proceed to Stage 2. The user must switch sessions.
 
 ## Stage 2: Large-Diff Guard
 

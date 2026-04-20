@@ -37,7 +37,8 @@ fi
 
 if [[ "$BRANCH" == "$DEFAULT_BRANCH" ]]; then
   echo "Error: you are on '$DEFAULT_BRANCH' — switch to a feature branch to refine" >&2
-  exit 1
+  # Exit 2 signals a "pickable" condition: the SKILL should offer the branch picker.
+  exit 2
 fi
 
 PR_NUMBER=""
@@ -67,7 +68,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 if [[ "$BASE_SHA" == "$HEAD_SHA" ]]; then
   echo "Error: no changes on '$BRANCH' vs '$BASE' — nothing to refine" >&2
-  exit 1
+  exit 2
 fi
 
 # Dirty check, excluding our own state dir via pathspec
