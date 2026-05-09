@@ -32,6 +32,20 @@ if [[ "$TOTAL_MILESTONES" -lt 1 ]]; then
   exit 1
 fi
 
+# Reject milestones with more than 5 scenarios (see agents/plan-checker.md §1).
+# Over-cap milestones almost always bundle multiple concerns. Set
+# VADER_ALLOW_LARGE_MILESTONES=1 to override (the wizard's Stage 3.5 sets
+# this when the user explicitly bypasses the plan checker).
+SCENARIO_CAP=5
+OVERSIZED=$(echo "$MILESTONES_JSON" | jq --argjson cap "$SCENARIO_CAP" \
+  '[.[] | select((.scenarios // []) | length > $cap)] | length')
+if [[ "$OVERSIZED" -gt 0 ]] && [[ "${VADER_ALLOW_LARGE_MILESTONES:-0}" != "1" ]]; then
+  echo "Error: $OVERSIZED milestone(s) exceed $SCENARIO_CAP scenarios. Split them or set VADER_ALLOW_LARGE_MILESTONES=1." >&2
+  echo "$MILESTONES_JSON" | jq -r --argjson cap "$SCENARIO_CAP" \
+    '.[] | select((.scenarios // []) | length > $cap) | "  - \(.name): \(.scenarios | length) scenarios"' >&2
+  exit 1
+fi
+
 # Generate session ID
 SESSION_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 

@@ -97,6 +97,7 @@ For EACH milestone (starting from the current one):
    - The Executor implements the milestone, writes tests mirroring each scenario, and runs quality gates
 4. After the Executor completes, spawn a **Verifier** agent using the Agent tool:
    - Include the Verifier persona above in the agent prompt
+   - Pass \`is_final: false\` for every milestone EXCEPT the last user milestone — the Verifier scopes its ladder accordingly (skip whole-codebase regression and full quality+security checks until Final Integration)
    - Include the milestone scenarios and a summary of what was implemented
    - Include project-specific test/lint/typecheck commands
    - The Verifier validates each scenario passes and reports approve or needs-fix
@@ -108,12 +109,17 @@ For EACH milestone (starting from the current one):
 8. Update current_milestone in .claude/vader/plan.local.md (increment by 1)
 9. Switch back to main before starting the next milestone
 
-After ALL milestones are complete:
-1. Update status to "done" in .claude/vader/plan.local.md
-2. Output: <promise>Hurra Vader has Triumphed</promise>
+After ALL milestones are complete, run the **Final Integration pass**:
+1. Run the project's full test suite
+2. Run the full typecheck
+3. Run any project-level sanity scripts (e.g. \`npm run test:sanity\`)
+4. Spawn one final Verifier with \`is_final: true\` over the whole branch (cross-milestone regression, full code quality + security checks)
+5. If Final Integration fails, treat it as a needs-fix on the LAST milestone and loop (still subject to the 3-cycle cap)
+6. Only after Final Integration approves: update status to "done" in .claude/vader/plan.local.md
+7. Output: <promise>Hurra Vader has Triumphed</promise>
 
 ## Hard Rules
-- Do NOT output the promise until ALL milestones are genuinely complete
+- Do NOT output the promise until ALL milestones AND the Final Integration pass are genuinely complete
 - Do NOT commit if lint, typecheck, or tests fail — fix first
 - Do NOT skip quality gates — they catch real CI failures
 - Each milestone must be committed separately

@@ -61,7 +61,25 @@ Split the plan into milestones. Each milestone has:
 
 Present milestones to the user using `AskUserQuestion` with options to approve, request changes, or add/remove milestones.
 
-**STOP**: Your next action MUST be to call `AskUserQuestion` to get milestone approval. Do NOT proceed to Stage 4 until the user approves.
+**STOP**: Your next action MUST be to call `AskUserQuestion` to get milestone approval. Do NOT proceed to Stage 3.5 until the user approves.
+
+## Stage 3.5: Plan check
+
+Read the plan-checker agent persona from `${CLAUDE_PLUGIN_ROOT}/agents/plan-checker.md`. Use the Task tool with `subagent_type=Explore` to spawn a **Plan Checker** agent — include the persona content and the Stage 3 milestones JSON.
+
+The checker enforces vader's planner rules (2–5 scenarios per milestone, working-state ordering, concern bundling, no verification-only finals) that the Planner often glosses over. Issues caught here are free; issues caught mid-execution are not.
+
+If the verdict is `approve`, proceed to Stage 4.
+
+If the verdict is `needs-revision`, present the issues via `AskUserQuestion` with options to:
+
+- Apply the checker's suggested splits (re-runs Stage 3 with the splits applied)
+- Edit milestones manually (re-runs Stage 3 with the user's edits as a starting point)
+- Override (records a one-line override reason in the plan and proceeds; sets `VADER_ALLOW_LARGE_MILESTONES=1` for the save)
+
+Re-run the checker after any edit. Only proceed on `approve` or explicit override.
+
+**STOP**: Your next action MUST be to spawn the checker and then call `AskUserQuestion` if the verdict is `needs-revision`. Do NOT proceed to Stage 4 until verdict is `approve` or the user overrides.
 
 ## Stage 4: Config
 
