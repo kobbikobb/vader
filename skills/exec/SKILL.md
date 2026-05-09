@@ -61,11 +61,22 @@ Try to invoke the ralph-wiggum loop using the Skill tool:
 
 ### Fallback: Direct Execution
 
-If the `ralph-loop:ralph-loop` skill is not available (skill not found error), execute the plan directly:
+Drop to direct execution on **any** failure of the ralph-loop invocation: skill not installed, prompt parse error, runtime error, anything. When falling back, tell the user explicitly:
+
+> Falling back to direct execution (ralph-loop unavailable: <one-line reason>). The same per-milestone Executor → Verifier flow runs inline; only the iteration controller differs.
+
+Don't silently retry. The failure mode of ralph-loop is opaque to the user; surfacing the reason makes it possible to fix.
+
+In direct execution mode:
 
 1. Read `.claude/vader/plan.local.md` for the full plan
 2. Work through each milestone sequentially following the prompt instructions from Step 3
 3. For each milestone: implement, test, lint/format, commit, update state file
-4. After all milestones: update status to "done" and output `<promise>Hurra Vader has Triumphed</promise>`
+4. After the LAST user milestone, run the **Final Integration pass** before declaring done:
+   - Full test suite (whatever the project's `test` command is)
+   - Full typecheck
+   - Any project-level sanity scripts (`npm run test:sanity`, etc.)
+   - Spawn a final Verifier with `is_final: true`
+5. Only after Final Integration approves: update status to "done" and output `<promise>Hurra Vader has Triumphed</promise>`
 
 The direct execution mode works identically to the ralph-wiggum loop but runs inline in the current session.

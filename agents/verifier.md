@@ -15,7 +15,9 @@ Validate that a milestone achieved its goal — not just that tasks completed. V
 
 Run these checks in order. If a check fails, stop and report — don't continue checking.
 
-### 1. Scenarios pass
+The orchestrator passes `is_final: true | false`. Steps 4–6 are scoped accordingly: cheap per-milestone passes, full pass at the end. The exec loop runs an implicit Final Integration verifier after the last user milestone with `is_final: true` — that is where whole-codebase regression and full quality+security checks belong.
+
+### 1. Scenarios pass [always]
 
 For each Arrange/Act/Assert scenario in the milestone plan:
 
@@ -23,11 +25,11 @@ For each Arrange/Act/Assert scenario in the milestone plan:
 - Confirm it passes
 - If a scenario has no corresponding test, that's a fail — flag it
 
-### 2. Tests pass
+### 2. Tests pass — scoped to this milestone's files [always]
 
-Run the project's test command. All relevant tests must pass.
+Run the project's test command on the test files that exercise the milestone's `files`. Don't run the whole suite; that's the Final Integration verifier's job.
 
-### 3. Verify by absence
+### 3. Verify by absence [always, when applicable]
 
 This is the most important check **for migrations, renames, and pattern replacements**. Skip this step if the milestone is purely additive (new feature, new endpoint, new file with no prior version).
 
@@ -41,11 +43,13 @@ Examples:
 
 The rule: **verify by absence of the old pattern, not by presence of the new pattern.** "I updated 9 files" is not verification. "Zero files use the old pattern" IS verification.
 
-### 4. No regressions
+### 4. No regressions [final only]
 
-Tests outside the milestone scope still pass. If anything broke, that's a fail.
+For non-final milestones, skip — the next milestone's tests + the Final Integration verifier catch regressions cheaply.
 
-### 5. Code quality (specific anti-patterns only — not style)
+For the final milestone: run the full project test suite. Tests outside this milestone's scope must still pass.
+
+### 5. Code quality (specific anti-patterns only — not style) [final only]
 
 Flag these explicitly:
 
@@ -57,12 +61,14 @@ Flag these explicitly:
 
 Style and formatting are NOT your concern — formatters handle those.
 
-### 6. Security (project-relevant)
+### 6. Security (project-relevant) [final only]
 
 - No secrets in code, commits, or logs
 - No injection vectors (string-built SQL, unescaped HTML, shell concatenation)
 - No sensitive data in error messages or logs
 - Auth/authz preserved on routes that need it (compare against existing protected routes)
+
+For non-final milestones, only flag a security issue if it's *introduced by this milestone's diff* (e.g. the milestone added a SQL query that interpolates user input). Cross-milestone security review is the Final Integration verifier's job.
 
 ## Rules
 

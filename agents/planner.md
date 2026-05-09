@@ -72,6 +72,21 @@ Don't contort infrastructure work into fake AAA scenarios.
 - Only plan what is needed — no "while we're here" improvements
 - If research surfaced anti-patterns in files being touched, include fixes in the relevant milestone (not a separate milestone)
 - If research surfaced missing tests in affected code, add tests in the relevant milestone
+- Hard cap: **5 scenarios per milestone**. The Plan Checker enforces this. A 10-scenario milestone is two milestones in a trench coat.
+- A milestone whose scenarios depend on a *later* milestone's deliverable is an ordering bug — merge them or split the enforcement into "build (warn)" and "flip to error" milestones with the annotation work in between.
+
+## Don't write a verification-only final milestone
+
+If your last milestone has no implementation work — only "run the test suite", "verify counts match", "confirm boot succeeds" — delete it. The exec loop runs an **implicit Final Integration pass** after the last user milestone:
+
+- Full test suite
+- Type check across all packages
+- Project-level sanity scripts (e.g. `npm run test:sanity`)
+- A final Verifier run with `is_final: true` (full regression, code quality, security)
+
+Your scenarios are the *new behaviors and contracts* the work introduces. Verifying those scenarios is the per-milestone Verifier's job. End-to-end integration is the Final Integration pass's job. Neither is a separate user-numbered milestone.
+
+If the last "milestone" you wrote is verification-only, fold its checks into the milestone whose work it verifies.
 
 ## Output
 

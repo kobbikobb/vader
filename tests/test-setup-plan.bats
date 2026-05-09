@@ -108,3 +108,51 @@ teardown() {
   grep -q "Project builds" .claude/vader/plan.local.md
   grep -q "Tests pass" .claude/vader/plan.local.md
 }
+
+@test "should reject milestones with more than 5 scenarios" {
+  # Arrange: a milestone with 6 scenarios — over the cap
+  SIX_SCENARIOS='[{"name":"s1","check":"c1"},{"name":"s2","check":"c2"},{"name":"s3","check":"c3"},{"name":"s4","check":"c4"},{"name":"s5","check":"c5"},{"name":"s6","check":"c6"}]'
+  MILESTONES='[{"name":"Big","scope":"Too much","files":[],"scenarios":'"$SIX_SCENARIOS"'}]'
+
+  # Act
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  # Assert
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"exceed 5 scenarios"* ]]
+  [[ "$output" == *"Big: 6 scenarios"* ]]
+  [ ! -f ".claude/vader/plan.local.md" ]
+}
+
+@test "should accept exactly 5 scenarios" {
+  FIVE_SCENARIOS='[{"name":"s1","check":"c1"},{"name":"s2","check":"c2"},{"name":"s3","check":"c3"},{"name":"s4","check":"c4"},{"name":"s5","check":"c5"}]'
+  MILESTONES='[{"name":"OnTheLine","scope":"At cap","files":[],"scenarios":'"$FIVE_SCENARIOS"'}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".claude/vader/plan.local.md" ]
+}
+
+@test "should allow override of scenario cap via VADER_ALLOW_LARGE_MILESTONES" {
+  SIX_SCENARIOS='[{"name":"s1","check":"c1"},{"name":"s2","check":"c2"},{"name":"s3","check":"c3"},{"name":"s4","check":"c4"},{"name":"s5","check":"c5"},{"name":"s6","check":"c6"}]'
+  MILESTONES='[{"name":"Big","scope":"Too much","files":[],"scenarios":'"$SIX_SCENARIOS"'}]'
+
+  VADER_ALLOW_LARGE_MILESTONES=1 run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".claude/vader/plan.local.md" ]
+}
+
+@test "should report all oversized milestones, not just the first" {
+  SIX='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"},{"name":"s4","check":"c"},{"name":"s5","check":"c"},{"name":"s6","check":"c"}]'
+  SEVEN='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"},{"name":"s4","check":"c"},{"name":"s5","check":"c"},{"name":"s6","check":"c"},{"name":"s7","check":"c"}]'
+  MILESTONES='[{"name":"First","scope":"x","files":[],"scenarios":'"$SIX"'},{"name":"Second","scope":"y","files":[],"scenarios":'"$SEVEN"'}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"2 milestone(s) exceed"* ]]
+  [[ "$output" == *"First: 6 scenarios"* ]]
+  [[ "$output" == *"Second: 7 scenarios"* ]]
+}
