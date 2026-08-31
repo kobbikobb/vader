@@ -112,24 +112,27 @@ EOF
   [[ "$output" == *"current_milestone"* ]]
 }
 
-@test "should include executor agent persona" {
+@test "should include executor persona path reference, not inline persona" {
   create_plan_file
 
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"Executor"* ]]
-  [[ "$output" == *"Implement a single milestone"* ]]
+  # Persona is referenced by path so the supervisor never carries the body
+  [[ "$output" == *"agents/executor.md"* ]]
+  [[ "$output" != *"Implement a single milestone"* ]]
 }
 
-@test "should include verifier agent persona" {
+@test "should include verifier persona path reference, not inline persona" {
   create_plan_file
 
   run "$SCRIPT"
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"Verifier"* ]]
-  [[ "$output" == *"Validate that a milestone achieved its goal"* ]]
+  [[ "$output" == *"agents/verifier.md"* ]]
+  [[ "$output" != *"Validate that a milestone achieved its goal"* ]]
 }
 
 @test "should include max retry instructions" {
@@ -139,4 +142,69 @@ EOF
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"Maximum 3"* ]]
+}
+
+@test "should route subagent reports to the reports dir, verdict-only return" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"reports/milestone-N-executor.md"* ]]
+  [[ "$output" == *"reports/milestone-N-verifier.md"* ]]
+  [[ "$output" == *"ONLY"* ]]
+  [[ "$output" == *"done"* ]]
+  [[ "$output" == *"approve"* ]]
+}
+
+@test "should include the inter-milestone verification gate" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Inter-milestone verification gate"* ]]
+  [[ "$output" == *"git diff main"* ]]
+  [[ "$output" == *"ABORT"* ]]
+}
+
+@test "should include the invariants file for the Final Integration oracle" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"invariants.md"* ]]
+  [[ "$output" == *"cross-milestone oracle"* ]]
+}
+
+@test "should keep supervisor context lean (no milestone bodies inlined)" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Build a test thing"* ]]
+  [[ "$output" != *"Add the feature"* ]]
+}
+
+@test "status flip to executing is atomic (no leftover temp file)" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  grep -q "status: executing" .claude/vader/plan.local.md
+  # No leftover temp files from the atomic write
+  ! ls .claude/vader/plan.local.md.tmp.* 2>/dev/null
+}
+
+@test "should persist a Branch/PR structural anchor after each milestone" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Branch/PR"* ]]
+  [[ "$output" == *"branch name and PR URL"* ]]
 }

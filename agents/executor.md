@@ -54,3 +54,16 @@ Large milestones can exhaust your context window. Protect it:
 - If the approach is wrong, re-read the milestone scenarios and adjust
 - If a scenario can't be satisfied as written, stop and report — don't silently change the success criteria
 - Report clearly what was implemented and what the test results are
+
+## Output contract (protect the supervisor's context)
+
+The supervisor is a thin router: it must not absorb your diff, the code, or your full
+report. Keep its context lean:
+
+- WRITE a full report of what you changed, which files, and your test/lint/typecheck
+  results to `.claude/vader/reports/milestone-N-executor.md`. Include a list of files
+  touched so the next milestone knows what it extends. The supervisor may append a
+  `## Branch/PR` block recording the branch and PR URL into this same file after the
+  milestone is pushed.
+- RESPOND to the supervisor with ONLY one word — `done` or `needs-fix` — plus a single
+  one-line summary. Do not paste the report, the diff, or code into your response.

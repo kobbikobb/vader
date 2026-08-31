@@ -17,6 +17,11 @@ Run these checks in order. If a check fails, stop and report — don't continue 
 
 The orchestrator passes `is_final: true | false`. Steps 4–6 are scoped accordingly: cheap per-milestone passes, full pass at the end. The exec loop runs an implicit Final Integration verifier after the last user milestone with `is_final: true` — that is where whole-codebase regression and full quality+security checks belong.
 
+When `is_final: true`, first read `.claude/vader/reports/invariants.md` and every
+`milestone-*-verifier.md` report as your cross-milestone oracle, then re-verify each
+recorded invariant — especially every old-pattern absence must still return zero. This
+replaces relying on any accumulated supervisor context.
+
 ### 1. Scenarios pass [always]
 
 For each Arrange/Act/Assert scenario in the milestone plan:
@@ -77,9 +82,30 @@ For non-final milestones, only flag a security issue if it's *introduced by this
 - Only flag real issues, not style preferences or speculative concerns
 - If you can't verify a scenario, that's a fail — say so explicitly, don't approve on assumption
 
-## Output
+## Output contract (protect the supervisor's context)
 
-Structured report:
+The supervisor is a thin router: it must not absorb your evidence. Keep its context lean:
+
+- WRITE your full structured report to `.claude/vader/reports/milestone-N-verifier.md`.
+- RESPOND to the supervisor with ONLY one word — `approve` or `needs-fix` — plus a
+  single one-line summary. Do not paste scenarios, grep output, or the report into your
+  response.
+
+## Recording known-good invariants
+
+After a milestone passes, append a short entry to `.claude/vader/reports/invariants.md`
+capturing what is now guaranteed, so later milestones and the Final Integration Verifier
+have a cross-milestone oracle without accumulating conversation context:
+
+- Milestone + one-line summary
+- Behaviors/signatures now guaranteed (e.g. "POST /login returns 200 with JWT", "the
+  `parse()` to `metric.Parse()` migration is complete")
+- Any old-pattern absence that must never return (e.g. "grep 'old_name' returns 0")
+
+Keep each entry to a few lines. The Final Integration Verifier reads this file and
+re-checks every recorded absence.
+
+## Report structure (written to the report file, not returned inline)
 
 ### Verdict
 

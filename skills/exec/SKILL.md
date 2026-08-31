@@ -48,7 +48,9 @@ Run the setup script to compose the ralph-wiggum prompt:
 "${CLAUDE_PLUGIN_ROOT}/scripts/setup-exec.sh"
 ```
 
-The output is the composed prompt text directly.
+The output is the composed prompt text directly. It represents a thin-router prompt: the
+running agent holds only the current milestone index and latest verdict, all heavy
+content stays in `.claude/vader/reports/` on disk.
 
 ## Step 4: Launch Ralph Loop
 
@@ -63,20 +65,16 @@ Try to invoke the ralph-wiggum loop using the Skill tool:
 
 Drop to direct execution on **any** failure of the ralph-loop invocation: skill not installed, prompt parse error, runtime error, anything. When falling back, tell the user explicitly:
 
-> Falling back to direct execution (ralph-loop unavailable: <one-line reason>). The same per-milestone Executor → Verifier flow runs inline; only the iteration controller differs.
+> Falling back to direct execution (ralph-loop unavailable: <one-line reason>). The same per-milestone fresh-subagent flow runs inline; only the iteration controller differs.
 
 Don't silently retry. The failure mode of ralph-loop is opaque to the user; surfacing the reason makes it possible to fix.
 
-In direct execution mode:
+In direct execution mode, follow the thin-router procedure exactly:
 
-1. Read `.claude/vader/plan.local.md` for the full plan
-2. Work through each milestone sequentially following the prompt instructions from Step 3
-3. For each milestone: implement, test, lint/format, commit, update state file
-4. After the LAST user milestone, run the **Final Integration pass** before declaring done:
-   - Full test suite (whatever the project's `test` command is)
-   - Full typecheck
-   - Any project-level sanity scripts (`npm run test:sanity`, etc.)
-   - Spawn a final Verifier with `is_final: true`
-5. Only after Final Integration approves: update status to "done" and output `<promise>Hurra Vader has Triumphed</promise>`
+1. Read only the `current_milestone` from `.claude/vader/plan.local.md` frontmatter and the current `## Milestone N` section.
+2. For each milestone: spawn a fresh Executor Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/executor.md`, report to `.claude/vader/reports/milestone-N-executor.md`, returns only `done|needs-fix`), then a fresh Verifier Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/verifier.md`, report to `.claude/vader/reports/milestone-N-verifier.md`, appends to `invariants.md`, returns only `approve|needs-fix`).
+3. Fix loop (max 3 cycles), commit, persist branch/PR anchor to the executor report, update `current_milestone` atomically, run the inter-milestone verification gate.
+4. After the LAST user milestone, run the **Final Integration pass** in a fresh Verifier: full test/typecheck/sanity, `is_final: true`, reading `invariants.md` + all verifier reports as the cross-milestone oracle.
+5. Only after Final Integration approves: update status to `done` and output `<promise>Hurra Vader has Triumphed</promise>`
 
 The direct execution mode works identically to the ralph-wiggum loop but runs inline in the current session.
