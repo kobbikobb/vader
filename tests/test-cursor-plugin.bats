@@ -35,8 +35,8 @@ setup() {
 @test "read-only agents declare readonly only in frontmatter" {
   for name in researcher chunker discusser plan-checker refine-verifier; do
     f="$PLUGIN_ROOT/.cursor-plugin/agents/$name.md"
-    run sed -n '1,8p' "$f"
-    [[ "$output" == *"readonly: true"* ]] || { echo "missing readonly in frontmatter: $f"; return 1; }
+    run awk 'NR > 1 && /^---$/ { exit } /^[[:space:]]*readonly:[[:space:]]*true[[:space:]]*$/ { found=1 } END { exit !found }' "$f"
+    [ "$status" -eq 0 ] || { echo "missing readonly in frontmatter: $f"; return 1; }
   done
 }
 
