@@ -99,7 +99,9 @@ Edit `agents/*.md` to match your team's conventions.
 ## Execution Modes
 
 - **ralph-wiggum mode** (default) — delegates to the [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) plugin for iteration management
-- **Direct mode** (fallback) — executes inline if ralph-wiggum isn't installed
+- **Direct mode** (fallback) — runs the thin-router loop directly if ralph-wiggum isn't installed
+
+Each milestone runs in a fresh Executor → Verifier subagent pair. Reports are written to `.claude/vader/reports/` so progress survives session clears.
 
 ## Tips
 

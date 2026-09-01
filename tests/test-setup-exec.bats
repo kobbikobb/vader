@@ -66,7 +66,7 @@ EOF
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"executing a vader plan"* ]]
-  [[ "$output" == *"Read the state file"* ]]
+  [[ "$output" == *"STATE FILE"* ]]
   [[ "$output" == *"current_milestone"* ]]
   # Plan body should NOT be inlined in the prompt
   [[ "$output" != *"Milestone 1: Setup"* ]]
