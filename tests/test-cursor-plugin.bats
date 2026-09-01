@@ -23,11 +23,11 @@ setup() {
   done
 }
 
-@test "every agent wrapper references an existing canonical persona" {
+@test "every agent wrapper references an existing persona" {
   for f in "$PLUGIN_ROOT"/.cursor-plugin/agents/*.md; do
     persona=$(grep -o 'agents/[^`]*\.md' "$f" | head -1)
     [ -n "$persona" ] || { echo "no persona reference: $f"; return 1; }
-    [ -f "$PLUGIN_ROOT/$persona" ] || { echo "missing canonical persona: $persona"; return 1; }
+    [ -f "$PLUGIN_ROOT/$persona" ] || { echo "missing persona: $persona"; return 1; }
   done
 }
 

@@ -34,7 +34,7 @@ If `large_diff` is `true`, ask the user: split into segments (recommended), proc
 ## Stage 3: Chunk
 
 If resuming and topics already exist, skip to Stage 4.
-Spawn a Task agent from `vader-chunker` (canonical persona `agents/chunker.md`) with the diff `git diff <base_sha>...HEAD`. In segmented mode, restrict to the chosen segment paths. Write the topics into `.cursor/vader/refine.local.md` following the conversation — concept-level topics, numbered.
+Spawn a Task agent from `vader-chunker` (persona `agents/chunker.md`) with the diff `git diff <base_sha>...HEAD`. In segmented mode, restrict to the chosen segment paths. Write the topics into `.cursor/vader/refine.local.md` following the conversation — concept-level topics, numbered.
 
 ## Stage 4: Topic walk
 
