@@ -1,0 +1,14 @@
+{
+  "name": "vader",
+  "version": "3.1.0",
+  "description": "A strict, opinionated wizard-driven workflow for planning and executing multi-milestone software projects with specialized agents.",
+  "author": {
+    "name": "Jakob Jonasson"
+  },
+  "homepage": "https://github.com/kobbikobb/vader",
+  "repository": "https://github.com/kobbikobb/vader",
+  "license": "MIT",
+  "keywords": ["workflow", "planning", "milestones", "agents", "project-management"],
+  "agents": ".cursor-plugin/agents",
+  "commands": ".cursor-plugin/commands"
+}
