@@ -185,6 +185,16 @@ teardown() {
   grep -q "reports_dir: .claude/vader/reports" .claude/vader/plan.local.md
 }
 
+@test "should write state under VADER_STATE_DIR when set" {
+  MILESTONES='[{"name":"Setup","scope":"Setup","files":["f.ts (add)"],"success_criteria":["works"]}]'
+  VADER_STATE_DIR=".cursor/vader" run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".cursor/vader/plan.local.md" ]
+  grep -q "reports_dir: .cursor/vader/reports" .cursor/vader/plan.local.md
+  [ ! -e ".claude/vader" ]
+}
+
 @test "should wipe stale reports when a new plan is created" {
   MILESTONES='[{"name":"Setup","scope":"Setup","files":["f.ts (add)"],"success_criteria":["works"]}]'
   mkdir -p .claude/vader/reports

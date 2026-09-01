@@ -15,6 +15,18 @@ get_field() {
   awk -F': *' -v k="$1" '$1 == k {gsub(/^"|"$/, "", $2); print $2; exit}' "$2"
 }
 
+# Resolve a state file path for a worktree. Absolute VADER_STATE_DIR is used
+# as-is; relative values are prefixed with the worktree path.
+state_file_for() {
+  local wt="$1" name="$2"
+  local dir="${VADER_STATE_DIR:-.claude/vader}"
+  if [[ "$dir" == /* ]]; then
+    echo "$dir/$name"
+  else
+    echo "$wt/$dir/$name"
+  fi
+}
+
 CURRENT_WT=$(git rev-parse --show-toplevel)
 
 # Parse `git worktree list --porcelain` for (worktree, branch) pairs.
@@ -31,7 +43,7 @@ while IFS= read -r line; do
     MARK=""
     if [[ "$WT_PATH" == "$CURRENT_WT" ]]; then MARK="*"; fi
 
-    PLAN="$WT_PATH/.claude/vader/plan.local.md"
+    PLAN=$(state_file_for "$WT_PATH" "plan.local.md")
     if [[ -f "$PLAN" ]]; then
       S=$(get_field status "$PLAN")
       if [[ "$S" != "done" ]]; then
@@ -41,7 +53,7 @@ while IFS= read -r line; do
       fi
     fi
 
-    REFINE="$WT_PATH/.claude/vader/refine.local.md"
+    REFINE=$(state_file_for "$WT_PATH" "refine.local.md")
     if [[ -f "$REFINE" ]]; then
       S=$(get_field status "$REFINE")
       if [[ "$S" != "done" ]]; then

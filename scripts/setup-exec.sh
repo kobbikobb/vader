@@ -13,8 +13,9 @@
 set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STATE_FILE=".claude/vader/plan.local.md"
-REPORTS_DIR=".claude/vader/reports"
+STATE_DIR="${VADER_STATE_DIR:-.claude/vader}"
+STATE_FILE="$STATE_DIR/plan.local.md"
+REPORTS_DIR="$STATE_DIR/reports"
 INVARIANTS_FILE="$REPORTS_DIR/invariants.md"
 EXECUTOR_PERSONA="$PLUGIN_ROOT/agents/executor.md"
 VERIFIER_PERSONA="$PLUGIN_ROOT/agents/verifier.md"

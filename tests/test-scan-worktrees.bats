@@ -96,6 +96,38 @@ EOF
   git worktree remove -f "$wt" || rm -rf "$wt"
 }
 
+@test "should honor absolute VADER_STATE_DIR in a linked worktree" {
+  # Arrange
+  echo "hi" > a.txt
+  git add a.txt
+  git commit -q -m "seed"
+  git branch feature
+  local wt
+  wt=$(mktemp -d)
+  rm -rf "$wt"
+  git worktree add -q "$wt" feature
+  local abs
+  abs=$(mktemp -d)
+  mkdir -p "$abs"
+  cat > "$abs/refine.local.md" <<'EOF'
+---
+status: reviewing
+branch: "feature"
+resolved_topics: 1
+total_topics: 2
+---
+EOF
+
+  # Act
+  VADER_STATE_DIR="$abs" run "$SCRIPT"
+
+  # Assert
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1/2"* ]]
+
+  git worktree remove -f "$wt" || rm -rf "$wt"
+}
+
 @test "should skip rows with status done" {
   # Arrange
   mkdir -p .claude/vader

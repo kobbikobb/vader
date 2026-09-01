@@ -13,6 +13,9 @@ MILESTONES_JSON="${5:?Error: milestones JSON is required}"
 MAX_ITERATIONS="${6:-15}"
 CREATE_PRS="${7:-true}"
 
+# Host-agnostic state root. Claude default; override to e.g. .cursor/vader.
+STATE_DIR="${VADER_STATE_DIR:-.claude/vader}"
+
 # Validate max_iterations is a number
 if ! [[ "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
   echo "Error: max_iterations must be a positive integer, got: $MAX_ITERATIONS" >&2
@@ -51,10 +54,10 @@ SESSION_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null
 
 # Create state directory, reports dir, and invariants file.
 # Wipe prior reports/invariants so a new plan cannot read stale results.
-mkdir -p .claude/vader
-rm -rf .claude/vader/reports
-mkdir -p .claude/vader/reports
-REPORTS_DIR=".claude/vader/reports"
+mkdir -p "$STATE_DIR"
+rm -rf "$STATE_DIR/reports"
+mkdir -p "$STATE_DIR/reports"
+REPORTS_DIR="$STATE_DIR/reports"
 INVARIANTS_FILE="$REPORTS_DIR/invariants.md"
 cat > "$INVARIANTS_FILE" <<'INV'
 # Known-good invariants
@@ -69,7 +72,7 @@ conversation context.
 INV
 
 # Write state file
-STATE_FILE=".claude/vader/plan.local.md"
+STATE_FILE="$STATE_DIR/plan.local.md"
 
 cat > "$STATE_FILE" <<FRONTMATTER
 ---
@@ -79,7 +82,7 @@ current_milestone: 0
 total_milestones: $TOTAL_MILESTONES
 max_iterations: $MAX_ITERATIONS
 create_prs: $CREATE_PRS
-reports_dir: .claude/vader/reports
+reports_dir: $REPORTS_DIR
 created_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ---
 FRONTMATTER

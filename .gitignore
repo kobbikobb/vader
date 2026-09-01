@@ -1,1 +1,6 @@
 .serena
+
+# Vader ephemeral state (host-agnostic: Claude/.claude, Cursor/.cursor, ...)
+.claude/vader/
+.cursor/vader/
+codex/vader/

@@ -45,7 +45,13 @@ worktree_for_branch() {
 
 refine_state_for() {
   local wt="$1"
-  local f="$wt/.claude/vader/refine.local.md"
+  local dir="${VADER_STATE_DIR:-.claude/vader}"
+  local f
+  if [[ "$dir" == /* ]]; then
+    f="$dir/refine.local.md"
+  else
+    f="$wt/$dir/refine.local.md"
+  fi
   if [[ ! -f "$f" ]]; then return; fi
   local status res tot
   status=$(awk -F': *' '$1 == "status" {gsub(/^"|"$/, "", $2); print $2; exit}' "$f")

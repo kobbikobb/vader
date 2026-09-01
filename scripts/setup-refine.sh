@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-STATE_DIR=".claude/vader"
+STATE_DIR="${VADER_STATE_DIR:-.claude/vader}"
 STATE_FILE="$STATE_DIR/refine.local.md"
 LARGE_DIFF_THRESHOLD="${VADER_LARGE_DIFF_THRESHOLD:-2000}"
 
@@ -72,7 +72,7 @@ if [[ "$BASE_SHA" == "$HEAD_SHA" ]]; then
 fi
 
 # Dirty check, excluding our own state dir via pathspec
-DIRTY=$(git -c core.quotePath=false status --porcelain -- . ':(exclude).claude/vader')
+DIRTY=$(git -c core.quotePath=false status --porcelain -- . ":(exclude)${STATE_DIR#./}")
 if [[ -n "$DIRTY" ]]; then
   echo "Error: working tree is dirty. Commit or stash your changes before refining." >&2
   exit 1
