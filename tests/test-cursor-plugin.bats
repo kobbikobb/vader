@@ -31,6 +31,15 @@ setup() {
   done
 }
 
+@test "read-only agents declare readonly frontmatter" {
+  for name in vader-chunker vader-discusser vader-plan-checker vader-refine-verifier; do
+    f="$PLUGIN_ROOT/.cursor-plugin/agents/${name#vader-}.md"
+    run grep -q "readonly: true" "$f"
+    [ "$status" -eq 0 ] || echo "missing readonly: $f"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "every command has name and description frontmatter" {
   for f in "$PLUGIN_ROOT"/.cursor-plugin/commands/*.md; do
     run bash -c "sed -n '1,4p' '$f' | grep -q '^---$' && sed -n '2,4p' '$f' | grep -q '^name:' && sed -n '2,4p' '$f' | grep -q '^description:'"
