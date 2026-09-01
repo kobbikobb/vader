@@ -107,6 +107,7 @@ Edit `agents/*.md` to match your team's conventions.
 - Keep milestones small and verifiable — each should have clear success criteria
 - Interrupted mid-build? Run `/vader:status` then `/vader:exec` to resume
 - Customize agent personas in `agents/` to encode your project's rules
+- PRs get an automated CodeRabbit review before merge
 
 ## Requirements
 
