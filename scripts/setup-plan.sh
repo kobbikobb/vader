@@ -49,8 +49,24 @@ fi
 # Generate session ID
 SESSION_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 
-# Create state directory
+# Create state directory, reports dir, and invariants file.
+# Wipe prior reports/invariants so a new plan cannot read stale results.
 mkdir -p .claude/vader
+rm -rf .claude/vader/reports
+mkdir -p .claude/vader/reports
+REPORTS_DIR=".claude/vader/reports"
+INVARIANTS_FILE="$REPORTS_DIR/invariants.md"
+cat > "$INVARIANTS_FILE" <<'INV'
+# Known-good invariants
+
+Accumulated by per-milestone Verifiers during execution. Each Verifier appends an entry
+recording (a) the milestone, (b) the behaviors/signatures that are now guaranteed, and
+(c) any old-pattern absences that must never return. The Final Integration Verifier reads
+this file as its cross-milestone regression oracle instead of relying on accumulated
+conversation context.
+
+## Milestone invariants
+INV
 
 # Write state file
 STATE_FILE=".claude/vader/plan.local.md"
@@ -63,6 +79,7 @@ current_milestone: 0
 total_milestones: $TOTAL_MILESTONES
 max_iterations: $MAX_ITERATIONS
 create_prs: $CREATE_PRS
+reports_dir: .claude/vader/reports
 created_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ---
 FRONTMATTER

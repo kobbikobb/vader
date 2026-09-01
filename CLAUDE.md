@@ -40,12 +40,12 @@ claude --plugin-dir .
 - `editor.md` — applies scoped refinements within a topic (refinement)
 - `refine-verifier.md` — checks an edit stayed in scope, no regressions (refinement)
 
-During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` inlines the Executor and Verifier personas into the ralph-wiggum prompt so the loop can spawn them as Agent subagents per milestone. During refinement, `/vader:refine` reads each refine persona and spawns it via Task per topic.
+During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` composes a thin-router ralph-wiggum prompt: it references the Executor/Verifier personas by path and routes subagent reports to files, so the supervisor holds only the current milestone index and latest verdict (details below under "State files"). During refinement, `/vader:refine` reads each refine persona and spawns it via Task per topic.
 
 **Scripts** (`scripts/`): Bash scripts called by skills:
 
 - `setup-plan.sh` — writes the plan state file from wizard output (title, scope, constraints, milestones JSON, max_iterations)
-- `setup-exec.sh` — reads plan state file, inlines agent personas, and composes a single ralph-wiggum prompt covering all milestones
+- `setup-exec.sh` — reads plan state file, references executor/verifier personas by path, and composes a single thin-router ralph-wiggum prompt covering all milestones
 - `setup-refine.sh` — resolves branch/base/PR, enforces clean tree + non-default branch, writes the refine state file (resumable per-branch)
 - `check-permissions.sh` — detects permission mode, nudges toward `--dangerously-skip-permissions`
 
@@ -53,12 +53,13 @@ During planning, the wizard spawns Researcher and Planner as Task subagents. Dur
 
 **State files**:
 
-- `.claude/vader/plan.local.md` — plan state (session_id, status, current_milestone, total_milestones, max_iterations, create_prs) + scope/constraints/milestones body
+- `.claude/vader/plan.local.md` — plan state (session_id, status, current_milestone, total_milestones, max_iterations, create_prs, reports_dir) + scope/constraints/milestones body
+- `.claude/vader/reports/` — per-milestone executor/verifier reports (`milestone-N-*.md`) + `invariants.md` (the cross-milestone oracle for Final Integration). Durable memory so the supervisor can be `/clear`ed mid-epic without losing progress.
 - `.claude/vader/refine.local.md` — refine state keyed on branch (branch, base, base_sha, head_sha, pr_number, topic counts) + topic checklist body
 
 Both are gitignored and ephemeral.
 
-**Key design constraint**: Ralph-wiggum's Stop hook exits the session, so per-milestone chaining is impossible. Instead, `/vader:exec` launches a **single** ralph-wiggum loop covering ALL milestones, with the prompt instructing Claude to work through them sequentially using Executor and Verifier agents.
+**Key design constraint**: Ralph-wiggum's Stop hook exits the session, so per-milestone chaining is impossible. Instead, `/vader:exec` launches a **single** ralph-wiggum loop covering ALL milestones. To stop that loop from degrading late milestones, the prompt is a **thin router**: each milestone runs in a fresh Executor/Verifier subagent that reads its scope from disk and writes reports to `.claude/vader/reports/`, returning only a one-word verdict. The supervisor never accumulates plan bodies, personas, diffs, or test output, so context stays lean enough to stay hands-off across the whole epic.
 
 ## Testing
 
