@@ -38,12 +38,13 @@ Spawn a Task agent from `vader-chunker` (persona `agents/chunker.md`) with the d
 
 ## Stage 4: Topic walk
 
-Show the topic checklist from the state file. Ask the user for each topic: **approve | discuss | edit | defer | jump | back**.
+Show the topic checklist from the state file. Ask the user for each topic: **approve | discuss | edit | defer | skip | jump | back**.
 
-- approve → mark it `- [x]` in the checklist, update `resolved_topics` in frontmatter.
+- approve → mark it `- [x]` in the checklist, update `resolved_topics` in frontmatter, advance.
 - discuss → spawn `vader-discusser` Task agent with the topic and question, show the answer, re-open the menu.
 - edit → spawn `vader-editor` Task agent for the scoped edit, then `vader-refine-verifier` to check it stayed in scope without regressions. Commit the topic. Update `resolved_topics`.
-- defer → note it deferred, update `deferred_topics`, continue.
+- defer → mark it `- [~]`, update `deferred_topics`, advance — revisit deferred topics after the forward pass.
+- skip → mark it `- [-]`, do not count as resolved, do not revisit.
 - jump / back → navigate the checklist accordingly.
 
 Update the frontmatter counts (`resolved_topics`, `deferred_topics`, `total_topics`) after every change.

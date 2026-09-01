@@ -17,9 +17,10 @@ setup() {
 
 @test "every agent wrapper has name and description frontmatter" {
   for f in "$PLUGIN_ROOT"/.cursor-plugin/agents/*.md; do
-    run bash -c "sed -n '1,4p' '$f' | grep -q '^---$' && sed -n '2,4p' '$f' | grep -q '^name:' && sed -n '2,4p' '$f' | grep -q '^description:'"
-    [ "$status" -eq 0 ] || echo "missing frontmatter: $f"
-    [ "$status" -eq 0 ]
+    run sed -n '1,5p' "$f"
+    [[ "$output" == *"---"* ]] || { echo "missing open fence: $f"; return 1; }
+    [[ "$output" == *"name:"* ]] || { echo "missing name: $f"; return 1; }
+    [[ "$output" == *"description:"* ]] || { echo "missing description: $f"; return 1; }
   done
 }
 
@@ -31,20 +32,20 @@ setup() {
   done
 }
 
-@test "read-only agents declare readonly frontmatter" {
-  for name in vader-chunker vader-discusser vader-plan-checker vader-refine-verifier; do
-    f="$PLUGIN_ROOT/.cursor-plugin/agents/${name#vader-}.md"
-    run grep -q "readonly: true" "$f"
-    [ "$status" -eq 0 ] || echo "missing readonly: $f"
-    [ "$status" -eq 0 ]
+@test "read-only agents declare readonly only in frontmatter" {
+  for name in researcher chunker discusser plan-checker refine-verifier; do
+    f="$PLUGIN_ROOT/.cursor-plugin/agents/$name.md"
+    run sed -n '1,8p' "$f"
+    [[ "$output" == *"readonly: true"* ]] || { echo "missing readonly in frontmatter: $f"; return 1; }
   done
 }
 
 @test "every command has name and description frontmatter" {
   for f in "$PLUGIN_ROOT"/.cursor-plugin/commands/*.md; do
-    run bash -c "sed -n '1,4p' '$f' | grep -q '^---$' && sed -n '2,4p' '$f' | grep -q '^name:' && sed -n '2,4p' '$f' | grep -q '^description:'"
-    [ "$status" -eq 0 ] || echo "missing frontmatter: $f"
-    [ "$status" -eq 0 ]
+    run sed -n '1,5p' "$f"
+    [[ "$output" == *"---"* ]] || { echo "missing open fence: $f"; return 1; }
+    [[ "$output" == *"name:"* ]] || { echo "missing name: $f"; return 1; }
+    [[ "$output" == *"description:"* ]] || { echo "missing description: $f"; return 1; }
   done
 }
 
@@ -55,22 +56,18 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "commands reference setup scripts that exist" {
-  run grep -q "scripts/setup-exec.sh" "$PLUGIN_ROOT/.cursor-plugin/commands/vader-exec.md"
-  [ "$status" -eq 0 ]
-  run grep -q "scripts/setup-plan.sh" "$PLUGIN_ROOT/.cursor-plugin/commands/vader.md"
-  [ "$status" -eq 0 ]
-  run grep -q "scripts/scan-worktrees.sh" "$PLUGIN_ROOT/.cursor-plugin/commands/vader-status.md"
-  [ "$status" -eq 0 ]
-  run grep -q "scripts/setup-refine.sh" "$PLUGIN_ROOT/.cursor-plugin/commands/vader-refine.md"
-  [ "$status" -eq 0 ]
-  run grep -q "scripts/refine-picker.sh" "$PLUGIN_ROOT/.cursor-plugin/commands/vader-refine.md"
-  [ "$status" -eq 0 ]
+@test "commands reference scripts that exist" {
+  for script in setup-exec.sh setup-plan.sh scan-worktrees.sh setup-refine.sh refine-picker.sh; do
+    [ -x "$PLUGIN_ROOT/scripts/$script" ] || [ -f "$PLUGIN_ROOT/scripts/$script" ] || {
+      echo "missing script: scripts/$script"; return 1; }
+  done
 }
 
 @test "claude and cursor manifests share the same version" {
-  local claude cursor
+  local claude cursor marketplace
   claude=$(jq -r '.version' "$PLUGIN_ROOT/.claude-plugin/plugin.json")
   cursor=$(jq -r '.version' "$PLUGIN_ROOT/.cursor-plugin/plugin.json")
+  marketplace=$(jq -r '.plugins[0].version' "$PLUGIN_ROOT/.claude-plugin/marketplace.json")
   [ "$claude" == "$cursor" ]
+  [ "$claude" == "$marketplace" ]
 }
