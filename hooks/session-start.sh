@@ -25,7 +25,7 @@ PERMISSION_MODE=$(echo "$HOOK_INPUT" | jq -r '.permission_mode // "default"' 2>/
 
 MESSAGE="Vader v${VERSION}"
 
-if [[ -f ".claude/vader/plan.local.md" && "$PERMISSION_MODE" != "bypassPermissions" ]]; then
+if [[ -f "${VADER_STATE_DIR:-.claude/vader}/plan.local.md" && "$PERMISSION_MODE" != "bypassPermissions" ]]; then
   MESSAGE+=" — active plan detected. Vader works best with --dangerously-skip-permissions. Restart with: claude --dangerously-skip-permissions"
 fi
 
