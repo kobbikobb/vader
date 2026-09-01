@@ -41,12 +41,12 @@ if [[ "$STATUS" == "done" ]]; then
   exit 1
 fi
 
-# Atomic frontmatter key update: sed to tempfile, then mv over original.
+# Atomic frontmatter key update: scope sed to frontmatter block only, then mv.
 update_state_key() {
   local key="$1" value="$2"
   local tmp
   tmp="${STATE_FILE}.tmp.$$"
-  sed "s/^${key}: .*/${key}: ${value}/" "$STATE_FILE" > "$tmp"
+  sed "/^---$/,/^---$/{ /^---$/!s/^${key}: .*/${key}: ${value}/; }" "$STATE_FILE" > "$tmp"
   mv "$tmp" "$STATE_FILE"
 }
 
@@ -114,7 +114,8 @@ For each milestone from \`current_milestone\` up to \`total_milestones\`:
 4. Spawn a fresh **Verifier** Agent:
    - Tell it to Read $VERIFIER_PERSONA, the milestone section, and
      $REPORTS_DIR/milestone-N-executor.md.
-   - Pass \`is_final: false\` for every milestone EXCEPT the last user milestone.
+   - Pass \`is_final: false\` for every milestone, including the last one —
+     Final Integration is the only \`is_final: true\` pass.
    - Instruct it to validate each scenario by evidence, WRITE its report to
      $REPORTS_DIR/milestone-N-verifier.md, and APPEND a known-good invariant entry to
      $INVARIANTS_FILE.
@@ -134,9 +135,10 @@ For each milestone from \`current_milestone\` up to \`total_milestones\`:
 Before advancing to the next milestone, run this 10-second check. It catches ghost
 subagent reports (a subagent that claimed success but made no real change):
 
-1. \`git branch --list vader/<slug>\` — branch exists
+1. If create_prs: \`git branch --list vader/<slug>\` — branch exists
 2. If create_prs: \`gh pr view <head>\` — PR exists (skip if no PR was created)
-3. \`git diff main..<branch> --stat\` — non-empty changes
+3. \`git status --short\` + \`git log -1 --oneline\` — a milestone commit was made
+   (or, if create_prs: \`git diff main..<branch> --stat\` — non-empty changes)
 
 If ANY check fails, re-verify instead of trusting the report: read the Executor report
 and the diff. If three separate milestones fail this gate, ABORT execution (do not

@@ -61,9 +61,10 @@ The supervisor is a thin router: it must not absorb your diff, the code, or your
 report. Keep its context lean:
 
 - WRITE a full report of what you changed, which files, and your test/lint/typecheck
-  results to `.claude/vader/reports/milestone-N-executor.md`. Include a list of files
-  touched so the next milestone knows what it extends. The supervisor may append a
-  `## Branch/PR` block recording the branch and PR URL into this same file after the
-  milestone is pushed.
+  results to the report path supplied by the supervisor (default
+  `.claude/vader/reports/milestone-N-executor.md`; use the exact path you were given).
+  Include a list of files touched so the next milestone knows what it extends. The
+  supervisor may append a `## Branch/PR` block recording the branch and PR URL into this
+  same file after the milestone is pushed.
 - RESPOND to the supervisor with ONLY one word — `done` or `needs-fix` — plus a single
   one-line summary. Do not paste the report, the diff, or code into your response.

@@ -184,3 +184,17 @@ teardown() {
   [ "$status" -eq 0 ]
   grep -q "reports_dir: .claude/vader/reports" .claude/vader/plan.local.md
 }
+
+@test "should wipe stale reports when a new plan is created" {
+  MILESTONES='[{"name":"Setup","scope":"Setup","files":["f.ts (add)"],"success_criteria":["works"]}]'
+  mkdir -p .claude/vader/reports
+  echo "stale" > .claude/vader/reports/invariants.md
+  echo "stale" > .claude/vader/reports/milestone-1-executor.md
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [[ ! -f ".claude/vader/reports/milestone-1-executor.md" ]]
+  grep -q "Known-good invariants" .claude/vader/reports/invariants.md
+  [[ "$(cat .claude/vader/reports/invariants.md)" != *"stale"* ]]
+}

@@ -49,12 +49,14 @@ fi
 # Generate session ID
 SESSION_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 
-# Create state directory, reports dir, and invariants file
+# Create state directory, reports dir, and invariants file.
+# Wipe prior reports/invariants so a new plan cannot read stale results.
+mkdir -p .claude/vader
+rm -rf .claude/vader/reports
 mkdir -p .claude/vader/reports
 REPORTS_DIR=".claude/vader/reports"
 INVARIANTS_FILE="$REPORTS_DIR/invariants.md"
-if [[ ! -f "$INVARIANTS_FILE" ]]; then
-  cat > "$INVARIANTS_FILE" <<'INV'
+cat > "$INVARIANTS_FILE" <<'INV'
 # Known-good invariants
 
 Accumulated by per-milestone Verifiers during execution. Each Verifier appends an entry
@@ -65,7 +67,6 @@ conversation context.
 
 ## Milestone invariants
 INV
-fi
 
 # Write state file
 STATE_FILE=".claude/vader/plan.local.md"
