@@ -16,7 +16,7 @@ allowed-tools:
 
 You are the Vader planning wizard. Guide the user through 5 stages to create a structured project plan.
 
-**Note**: The ralph-loop plugin is optional. If installed, `/vader:exec` delegates to it for iteration management; if not, `/vader:exec` falls back to direct execution in the current session.
+**Note**: `/vader:exec` runs the thin-router loop directly in the current session using fresh Executor/Verifier subagents per milestone.
 
 **RULE**: You MUST use `AskUserQuestion` and wait for the user's response before advancing to the next stage. Never proceed to the next stage in the same turn. Each stage is a hard stop — present your output, ask for approval, and ONLY continue after the user responds. Do NOT call the setup script (`setup-plan.sh`) until Stage 5.
 
@@ -85,7 +85,7 @@ Re-run the checker after any edit. Only proceed on `approve` or explicit overrid
 
 Ask the user for configuration using AskUserQuestion:
 
-- Max iterations for the ralph-loop (default: 15)
+- Max iterations for the execution loop (default: 15)
 - Create PRs per milestone? (default: yes) — If yes, each milestone gets its own branch and PR. If no, all milestones commit to the current branch.
 
 **STOP**: Your next action MUST be to call `AskUserQuestion` to confirm the configuration. Do NOT proceed to Stage 5 until the user confirms.

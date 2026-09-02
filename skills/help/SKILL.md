@@ -13,14 +13,14 @@ Display the following usage guide:
 
 ## Vader - Structured Project Execution
 
-Vader is an opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects using specialized agents.
+Vader is an opinionated wizard-driven workflow that plans and executes multi-milestone software projects using specialized agents.
 
 ### Commands
 
 | Command                | Description                                    |
 | ---------------------- | ---------------------------------------------- |
 | `/vader [description]` | Start the planning wizard                      |
-| `/vader:exec`          | Execute the current plan via ralph-wiggum      |
+| `/vader:exec`          | Execute the current plan via the thin-router   |
 | `/vader:refine`        | Walk the current branch's diff topic by topic  |
 | `/vader:status`        | Show plan progress                             |
 | `/vader:cancel`        | Abort execution and clean up                   |
@@ -62,7 +62,6 @@ Agent personas are defined in `agents/*.md` and can be customized.
 
 ### Requirements
 
-- **ralph-wiggum** plugin (optional — vader falls back to direct execution)
 - Best with `--dangerously-skip-permissions` for uninterrupted execution
 
 ### State

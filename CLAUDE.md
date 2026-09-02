@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Vader is a Claude Code plugin that wraps [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) to plan and execute multi-milestone software projects via a wizard-driven workflow using specialized agents. It's pure Bash + Markdown + JSON with zero build dependencies.
+Vader is a Claude Code plugin that plans and executes multi-milestone software projects via a wizard-driven workflow using specialized agents. It's pure Bash + Markdown + JSON with zero build dependencies.
 
 ## Commands
 
@@ -40,12 +40,12 @@ claude --plugin-dir .
 - `editor.md` — applies scoped refinements within a topic (refinement)
 - `refine-verifier.md` — checks an edit stayed in scope, no regressions (refinement)
 
-During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` composes a thin-router ralph-wiggum prompt: it references the Executor/Verifier personas by path and routes subagent reports to files, so the supervisor holds only the current milestone index and latest verdict (details below under "State files"). During refinement, `/vader:refine` reads each refine persona and spawns it via Task per topic.
+During planning, the wizard spawns Researcher and Planner as Task subagents. During execution, `setup-exec.sh` composes the thin-router prompt: it references the Executor/Verifier personas by path and routes subagent reports to files, so the supervisor holds only the current milestone index and latest verdict (details below under "State files"). During refinement, `/vader:refine` reads each refine persona and spawns it via Task per topic.
 
 **Scripts** (`scripts/`): Bash scripts called by skills:
 
 - `setup-plan.sh` — writes the plan state file from wizard output (title, scope, constraints, milestones JSON, max_iterations)
-- `setup-exec.sh` — reads plan state file, references executor/verifier personas by path, and composes a single thin-router ralph-wiggum prompt covering all milestones
+- `setup-exec.sh` — reads plan state file, references executor/verifier personas by path, and composes a single thin-router prompt covering all milestones
 - `setup-refine.sh` — resolves branch/base/PR, enforces clean tree + non-default branch, writes the refine state file (resumable per-branch)
 - `check-permissions.sh` — detects permission mode, nudges toward `--dangerously-skip-permissions`
 
@@ -59,7 +59,7 @@ During planning, the wizard spawns Researcher and Planner as Task subagents. Dur
 
 Both are gitignored and ephemeral.
 
-**Key design constraint**: Ralph-wiggum's Stop hook exits the session, so per-milestone chaining is impossible. Instead, `/vader:exec` launches a **single** ralph-wiggum loop covering ALL milestones. To stop that loop from degrading late milestones, the prompt is a **thin router**: each milestone runs in a fresh Executor/Verifier subagent that reads its scope from disk and writes reports to `.claude/vader/reports/`, returning only a one-word verdict. The supervisor never accumulates plan bodies, personas, diffs, or test output, so context stays lean enough to stay hands-off across the whole epic.
+**Key design constraint**: `/vader:exec` launches a **single** thin-router execution prompt covering ALL milestones. To stop that loop from degrading late milestones, the prompt is a **thin router**: each milestone runs in a fresh Executor/Verifier subagent that reads its scope from disk and writes reports to `.claude/vader/reports/`, returning only a one-word verdict. The supervisor never accumulates plan bodies, personas, diffs, or test output, so context stays lean enough to stay hands-off across the whole epic.
 
 ## Testing
 
