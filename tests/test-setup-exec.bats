@@ -311,3 +311,224 @@ EOF
   [[ "$output" == *"git checkout -b"* ]]
   [[ "$output" != *"git push"* ]]
 }
+
+@test "should echo checkpoint value into prompt for resume" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "resume-1"
+status: executing
+current_milestone: 3
+checkpoint: verifier_approved
+total_milestones: 5
+max_iterations: 15
+create_prs: true
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Resume Plan
+
+## Scope
+Resume
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 3: Mid
+Mid milestone
+
+### Files
+- src/mid.sh (add)
+
+### Success Criteria
+- Works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"CURRENT MILESTONE: 3 of 5"* ]]
+  [[ "$output" == *"CHECKPOINT: verifier_approved"* ]]
+}
+
+@test "should echo executor_done checkpoint into prompt" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "resume-2"
+status: executing
+current_milestone: 2
+checkpoint: executor_done
+total_milestones: 4
+max_iterations: 15
+create_prs: false
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Resume Two
+
+## Scope
+Resume
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 2: Second
+Second milestone
+
+### Files
+- src/second.sh (add)
+
+### Success Criteria
+- Works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"CHECKPOINT: executor_done"* ]]
+}
+
+@test "should migrate 0-based current_milestone to 1 in state file" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "legacy"
+status: executing
+current_milestone: 0
+total_milestones: 3
+max_iterations: 15
+create_prs: false
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Legacy Plan
+
+## Scope
+Legacy
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 1: First
+First milestone
+
+### Files
+- src/first.sh (add)
+
+### Success Criteria
+- Works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  grep -q "current_milestone: 1" .claude/vader/plan.local.md
+  grep -q "checkpoint: idle" .claude/vader/plan.local.md
+  [[ "$output" == *"CURRENT MILESTONE: 1 of 3"* ]]
+}
+
+@test "should add checkpoint when missing and set to idle" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "no-checkpoint"
+status: executing
+current_milestone: 2
+total_milestones: 3
+max_iterations: 15
+create_prs: true
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: No Checkpoint
+
+## Scope
+No checkpoint
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 2: Second
+Second milestone
+
+### Files
+- src/second.sh (add)
+
+### Success Criteria
+- Works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  grep -q "checkpoint: idle" .claude/vader/plan.local.md
+}
+
+@test "should echo existing work_branch into prompt" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "work-branch"
+status: executing
+current_milestone: 2
+checkpoint: idle
+work_branch: vader/1700000000
+total_milestones: 3
+max_iterations: 15
+create_prs: false
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Work Branch Plan
+
+## Scope
+Work branch
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 2: Second
+Second milestone
+
+### Files
+- src/second.sh (add)
+
+### Success Criteria
+- Works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WORK BRANCH: vader/1700000000"* ]]
+}
+
+@test "should instruct fix loop to reset checkpoint on needs-fix" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"reset checkpoint to \`idle\`"* ]]
+}
+
+@test "should guard commit against clean tree on resume" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git status --short"* ]]
+  [[ "$output" == *"skip the commit"* ]]
+}

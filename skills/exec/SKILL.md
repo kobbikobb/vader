@@ -62,8 +62,10 @@ Read the `max_iterations` from the plan file frontmatter.
 
 Follow the thin-router procedure exactly, resolving the report paths from the plan's `reports_dir` (step 2) instead of a fixed default:
 
-1. Read only the `current_milestone` from `.claude/vader/plan.local.md` frontmatter and the current `## Milestone N` section.
-2. For each milestone: spawn a fresh Executor Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/executor.md`, report to `<reports_dir>/milestone-N-executor.md`, returns only `done|needs-fix`), then a fresh Verifier Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/verifier.md`, report to `<reports_dir>/milestone-N-verifier.md`, appends to `<reports_dir>/invariants.md`, returns only `approve|needs-fix`).
-3. Fix loop (max 3 cycles), commit, persist branch/PR anchor to the executor report, update `current_milestone` atomically, run the inter-milestone verification gate.
-4. After the LAST user milestone, run the **Final Integration pass** in a fresh Verifier: full test/typecheck/sanity, `is_final: true`, reading `<reports_dir>/invariants.md` + all verifier reports as the cross-milestone oracle.
-5. Only after Final Integration approves: update status to `done` and output `<promise>Hurra Vader has Triumphed</promise>`
+1. Read the `current_milestone`, `checkpoint`, and `work_branch` from `.claude/vader/plan.local.md` frontmatter and the current `## Milestone N` section. Use the checkpoint to skip completed sub-steps: `idle` starts from the Executor, `executor_done` skips to the Verifier, `verifier_approved` skips to commit. Update the checkpoint after each transition via atomic tempfile+mv, and reset to `idle` after commit + `current_milestone` increment.
+2. Pass the plan `## Constraints` as overrides to each Executor (persona rules are superseded by plan constraints for that milestone), and enforce sequential cluster subagent execution to avoid races on shared files.
+3. Create/reuse a working branch when `create_prs` is false, persisting the name to `work_branch` in the frontmatter so resume reconnects to prior milestone commits.
+4. For each milestone: spawn a fresh Executor Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/executor.md`, report to `<reports_dir>/milestone-N-executor.md`, returns only `done|needs-fix`), then a fresh Verifier Agent (persona at `${CLAUDE_PLUGIN_ROOT}/agents/verifier.md`, report to `<reports_dir>/milestone-N-verifier.md`, appends to `<reports_dir>/invariants.md`, returns only `approve|needs-fix`).
+5. Fix loop (max 3 cycles — reset checkpoint to `idle` on each needs-fix), commit only if the tree is dirty, persist branch/PR anchor to the executor report, update `current_milestone` atomically, run the inter-milestone verification gate.
+6. After the LAST user milestone, run the **Final Integration pass** in a fresh Verifier: full test/typecheck/sanity, `is_final: true`, reading `<reports_dir>/invariants.md` + all verifier reports as the cross-milestone oracle.
+7. Only after Final Integration approves: update status to `done` and output `<promise>Hurra Vader has Triumphed</promise>`

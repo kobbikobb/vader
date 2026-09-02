@@ -40,6 +40,7 @@ CHECKPOINT=$(echo "$FRONTMATTER" | grep '^checkpoint:' | sed 's/checkpoint: *//'
 CHECKPOINT="${CHECKPOINT:-idle}"
 CURRENT_MILESTONE=$(echo "$FRONTMATTER" | grep '^current_milestone:' | sed 's/current_milestone: *//')
 TOTAL_MILESTONES=$(echo "$FRONTMATTER" | grep '^total_milestones:' | sed 's/total_milestones: *//')
+WORK_BRANCH=$(echo "$FRONTMATTER" | grep '^work_branch:' | sed 's/work_branch: *//' || true)
 
 if [[ "$STATUS" == "done" ]]; then
   echo "Error: This plan is already completed." >&2
@@ -47,13 +48,32 @@ if [[ "$STATUS" == "done" ]]; then
 fi
 
 # Atomic frontmatter key update: scope sed to frontmatter block only, then mv.
+# Replaces an existing key; otherwise inserts it right before the closing --- of the
+# frontmatter block (needed to add new keys like checkpoint to older plan files).
 update_state_key() {
   local key="$1" value="$2"
   local tmp
   tmp="${STATE_FILE}.tmp.$$"
-  sed "/^---$/,/^---$/{ /^---$/!s/^${key}: .*/${key}: ${value}/; }" "$STATE_FILE" > "$tmp"
+  if grep -q "^${key}:" "$STATE_FILE"; then
+    sed "/^---$/,/^---$/{ /^---$/!s/^${key}: .*/${key}: ${value}/; }" "$STATE_FILE" > "$tmp"
+  else
+    # Insert before the second --- line (body start / frontmatter close)
+    awk -v key="$key" -v value="$value" '
+      /^---$/ { dashes++; if (dashes==2) { print key": "value } }
+      { print }
+    ' "$STATE_FILE" > "$tmp"
+  fi
   mv "$tmp" "$STATE_FILE"
 }
+
+# Migrate pre-existing 0-based plans: current_milestone 0 → 1, add checkpoint if missing
+if [[ "$CURRENT_MILESTONE" == "0" ]]; then
+  update_state_key "current_milestone" "1"
+  CURRENT_MILESTONE="1"
+fi
+if ! printf '%s' "$FRONTMATTER" | grep -q '^checkpoint:'; then
+  update_state_key "checkpoint" "idle"
+fi
 
 # Update status to executing
 update_state_key "status" "executing"
@@ -71,18 +91,28 @@ For EACH milestone:
   ```
 - Then switch back to main before starting the next milestone'
 else
-  BRANCH_INSTRUCTIONS='## Branch Strategy
+  BRANCH_INSTRUCTIONS="## Branch Strategy
 
-Before starting the first milestone, create a working branch to avoid committing
-directly to the checked-out branch:
+Before starting the first milestone, create (or reuse) a working branch to avoid
+committing directly to the checked-out branch.
 
-```
-WORK_BRANCH="vader/$(date +%s)"
-git checkout -b "$WORK_BRANCH"
-```
+If a \`work_branch\` value is already set in the state file frontmatter, use that
+branch — checkout it and continue. This ensures resume after crash or /clear
+reconnects to the branch with prior milestone commits.
 
-All milestones are committed to this branch sequentially. The branch name is
-recorded in the executor report for later reference.'
+If no \`work_branch\` is set, create one and persist it to the state file:
+\`\`\`
+WORK_BRANCH=\"vader/\$(date +%s)\"
+git checkout -b \"\$WORK_BRANCH\"
+\`\`\`
+
+Then persist the branch name to the state file via atomic write:
+\`\`\`
+sed '/^---$/,/^---$/{ /^---$/!s/^work_branch: .*/work_branch: '\$WORK_BRANCH'/; }' \"\$STATE_FILE\" > \"\$STATE_FILE.tmp.\$\$\"
+mv \"\$STATE_FILE.tmp.\$\$\" \"\$STATE_FILE\"
+\`\`\`
+
+All milestones are committed to this branch sequentially."
 fi
 
 # Output prompt directly to stdout
@@ -96,6 +126,7 @@ REPORTS DIR: $REPORTS_DIR
 INVARIANTS FILE: $INVARIANTS_FILE
 CURRENT MILESTONE: $CURRENT_MILESTONE of $TOTAL_MILESTONES
 CHECKPOINT: $CHECKPOINT
+WORK BRANCH: ${WORK_BRANCH:-none}
 
 ## Context discipline (non-negotiable)
 
@@ -187,10 +218,13 @@ For each milestone from \`current_milestone\` (1-based) up to \`total_milestones
      $INVARIANTS_FILE.
    - Instruct it to respond with ONLY: \`approve\` or \`needs-fix\` plus one line.
    - On approve: update checkpoint to \`verifier_approved\`.
-5. Fix loop: if Verifier returns \`needs-fix\`, spawn a fresh Executor with the issues,
-   then a fresh Verifier. Maximum 3 Executor-Verifier cycles per milestone. If issues
-   persist after 3 cycles, stop and report.
-6. Commit: \`vader: milestone N - [name]\`. If create_prs is enabled, push and create a PR.
+5. Fix loop: if Verifier returns \`needs-fix\`, reset checkpoint to \`idle\`, spawn a
+   fresh Executor with the issues, then a fresh Verifier. Maximum 3 Executor-Verifier
+   cycles per milestone. If issues persist after 3 cycles, stop and report.
+6. Commit: if \`git status --short\` is non-empty, commit with \`vader: milestone N - [name]\`.
+   If create_prs is enabled, push and create a PR. If the tree is clean (no staged or
+   unstaged changes), skip the commit — this avoids empty re-commits on resume after a
+   crash between commit and state increment.
 7. Persist structural anchor: append a short \`## Branch/PR\` block to
    $REPORTS_DIR/milestone-N-executor.md recording the branch name and PR URL/number, so
    later milestones and Final Integration can anchor on them from disk. Then update
