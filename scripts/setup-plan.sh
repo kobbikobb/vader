@@ -78,7 +78,8 @@ cat > "$STATE_FILE" <<FRONTMATTER
 ---
 session_id: "$SESSION_ID"
 status: planned
-current_milestone: 0
+current_milestone: 1
+checkpoint: idle
 total_milestones: $TOTAL_MILESTONES
 max_iterations: $MAX_ITERATIONS
 create_prs: $CREATE_PRS

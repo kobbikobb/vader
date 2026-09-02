@@ -18,7 +18,8 @@ teardown() {
   [ "$status" -eq 0 ]
   [ -f ".claude/vader/plan.local.md" ]
   grep -q "status: planned" .claude/vader/plan.local.md
-  grep -q "current_milestone: 0" .claude/vader/plan.local.md
+  grep -q "current_milestone: 1" .claude/vader/plan.local.md
+  grep -q "checkpoint: idle" .claude/vader/plan.local.md
   grep -q "total_milestones: 1" .claude/vader/plan.local.md
   grep -q "max_iterations: 15" .claude/vader/plan.local.md
 }

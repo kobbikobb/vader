@@ -16,7 +16,8 @@ create_plan_file() {
 ---
 session_id: "test-123"
 status: planned
-current_milestone: 0
+current_milestone: 1
+checkpoint: idle
 total_milestones: 2
 max_iterations: 15
 created_at: "2026-02-23T00:00:00Z"
@@ -207,4 +208,106 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"Branch/PR"* ]]
   [[ "$output" == *"branch name and PR URL"* ]]
+}
+
+@test "should include checkpoint in the prompt output" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"CHECKPOINT"* ]]
+  [[ "$output" == *"idle"* ]]
+}
+
+@test "should include crash checkpointing instructions" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Crash checkpointing"* ]]
+  [[ "$output" == *"executor_done"* ]]
+  [[ "$output" == *"verifier_approved"* ]]
+}
+
+@test "should include concurrency control instructions" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Concurrency control"* ]]
+  [[ "$output" == *"sequentially"* ]]
+}
+
+@test "should include plan overrides section" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Plan overrides"* ]]
+  [[ "$output" == *"supersede persona defaults"* ]]
+}
+
+@test "should include current milestone count in prompt" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"CURRENT MILESTONE: 1 of 2"* ]]
+}
+
+@test "should use 1-based milestone indexing in loop instruction" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"current_milestone"* ]]
+  [[ "$output" == *"total_milestones"* ]]
+}
+
+@test "should create a working branch when create_prs is false" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "test-456"
+status: planned
+current_milestone: 1
+checkpoint: idle
+total_milestones: 1
+max_iterations: 15
+create_prs: false
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: No PR Plan
+
+## Scope
+Simple plan
+
+## Constraints
+- None
+
+## Success Criteria
+- Works
+
+## Milestone 1: Simple
+Do something simple
+
+### Files
+- src/simple.sh (add)
+
+### Success Criteria
+- It works
+EOF
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Branch Strategy"* ]]
+  [[ "$output" == *"git checkout -b"* ]]
+  [[ "$output" != *"git push"* ]]
 }
