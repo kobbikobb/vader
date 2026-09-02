@@ -10,16 +10,24 @@ set -euo pipefail
 HOOK_INPUT=$(cat)
 STATE_FILE="${VADER_STATE_DIR:-.claude/vader}/plan.local.md"
 
-if [[ ! -f "$STATE_FILE" ]] || ! sed -n '2,/^---$/p' "$STATE_FILE" | grep -q '^status: planned$'; then
+if [[ ! -f "$STATE_FILE" ]] || ! sed -n '2,/^---$/p' "$STATE_FILE" | grep -qE '^status: planned[[:space:]]*$'; then
   exit 0
 fi
 
-# Bash is matched too, or a denied Edit just becomes a heredoc. Read-only
-# commands pass; redirects to /dev are dropped first so they don't read as writes.
-if [[ "$(jq -r '.tool_name // ""' <<<"$HOOK_INPUT" 2>/dev/null)" == "Bash" ]]; then
-  CMD=$(jq -r '.tool_input.command // ""' <<<"$HOOK_INPUT" | sed -E 's|[0-9]*>>?[[:space:]]*/dev/[a-z]*||g')
-  grep -qE '>|(^|[[:space:]])(sed[[:space:]]+-i|tee|python3?|perl|node|patch)([[:space:]]|$)' <<<"$CMD" || exit 0
-fi
+TOOL=$(jq -r '.tool_name // ""' <<<"$HOOK_INPUT" 2>/dev/null || echo "")
+CMD=$(jq -r '.tool_input.command // ""' <<<"$HOOK_INPUT" 2>/dev/null || echo "")
+
+case "$TOOL" in
+  Edit|Write|MultiEdit|NotebookEdit) ;;
+  # Guessing which commands write leaks both ways, so only vader's own commands pass.
+  Bash)
+    if grep -qE 'CLAUDE_PLUGIN_ROOT|plan\.local\.md' <<<"$CMD"; then
+      exit 0
+    fi
+    ;;
+  # An unreadable payload allows, or a broken jq locks the session out of /vader:cancel.
+  *) exit 0 ;;
+esac
 
 # A hook that errors is treated as allow, so the deny path stays dependency-free.
 cat <<'JSON'
@@ -27,7 +35,7 @@ cat <<'JSON'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "A vader plan is saved but execution has not started, so file edits are blocked. Run /vader:exec to start the milestone loop, or /vader:cancel to drop the plan."
+    "permissionDecisionReason": "A vader plan is saved but execution has not started, so edits are blocked. Run /vader:exec to start the milestone loop, or /vader:cancel to drop the plan."
   }
 }
 JSON
