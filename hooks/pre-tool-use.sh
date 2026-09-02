@@ -19,9 +19,10 @@ CMD=$(jq -r '.tool_input.command // ""' <<<"$HOOK_INPUT" 2>/dev/null || echo "")
 
 case "$TOOL" in
   Edit|Write|MultiEdit|NotebookEdit) ;;
-  # Guessing which commands write leaks both ways, so only vader's own commands pass.
+  # Guessing which commands write leaks both ways, so only vader's own commands
+  # pass, and only unchained, or "touch app.ts; echo plan.local.md" walks through.
   Bash)
-    if grep -qE 'CLAUDE_PLUGIN_ROOT|plan\.local\.md' <<<"$CMD"; then
+    if grep -qE 'CLAUDE_PLUGIN_ROOT|plan\.local\.md' <<<"$CMD" && ! grep -qE '[;&|`]|\$\(' <<<"$CMD"; then
       exit 0
     fi
     ;;

@@ -104,6 +104,17 @@ decision() {
   [ -z "$output" ]
 }
 
+@test "should deny a chained command that name-drops the plan file" {
+  write_plan planned
+  local input
+  input=$(bash_input 'touch src/app.ts; echo plan.local.md')
+
+  run bash -c "printf '%s' '$input' | '$SCRIPT'"
+
+  [ "$status" -eq 0 ]
+  [ "$(decision)" == "deny" ]
+}
+
 @test "should allow a payload whose tool cannot be read" {
   write_plan planned
 
