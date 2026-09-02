@@ -49,6 +49,37 @@ if [[ "$OVERSIZED" -gt 0 ]] && [[ "${VADER_ALLOW_LARGE_MILESTONES:-0}" != "1" ]]
   exit 1
 fi
 
+# Reject milestones that jump 3x or more in size over their predecessor (see
+# agents/plan-checker.md §6). Compares each milestone to the previous by scenario
+# count and file count. A 3x jump almost always means the larger milestone bundles
+# concerns that should be split per gateway/module/surface.
+SIZE_RATIO=3
+RATIO_FLAGS=$(echo "$MILESTONES_JSON" | jq -r --argjson ratio "$SIZE_RATIO" '
+  [ range(1; length) as $i
+    | .[$i] as $cur
+    | .[$i-1] as $prev
+    | (($cur.scenarios // []) | length) as $cs
+    | (($prev.scenarios // []) | length) as $ps
+    | ($cur.files // [] | length) as $cf
+    | ($prev.files // [] | length) as $pf
+    | select( ($ps > 0 and ($cs / $ps) >= $ratio) or ($pf > 0 and ($cf / $pf) >= $ratio) )
+    | $cur.name ]
+  | .[]')
+if [[ -n "$RATIO_FLAGS" ]] && [[ "${VADER_ALLOW_LARGE_MILESTONES:-0}" != "1" ]]; then
+  echo "Error: milestone(s) ${SIZE_RATIO}+ times larger than their predecessor — oversized bundle. Split them or set VADER_ALLOW_LARGE_MILESTONES=1." >&2
+  echo "$MILESTONES_JSON" | jq -r --argjson ratio "$SIZE_RATIO" '
+    [ range(1; length) as $i
+      | .[$i] as $cur | .[$i-1] as $prev
+      | (($cur.scenarios // []) | length) as $cs
+      | (($prev.scenarios // []) | length) as $ps
+      | ($cur.files // [] | length) as $cf
+      | ($prev.files // [] | length) as $pf
+      | select( ($ps > 0 and ($cs / $ps) >= $ratio) or ($pf > 0 and ($cf / $pf) >= $ratio) )
+      | "  - \($cur.name): \($cs) scenarios / \($cf) files vs \($ps) scenarios / \($pf) files in \($prev.name)" ]
+    | .[]' >&2
+  exit 1
+fi
+
 # Generate session ID
 SESSION_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 
@@ -78,7 +109,9 @@ cat > "$STATE_FILE" <<FRONTMATTER
 ---
 session_id: "$SESSION_ID"
 status: planned
-current_milestone: 0
+current_milestone: 1
+checkpoint: idle
+work_branch: ""
 total_milestones: $TOTAL_MILESTONES
 max_iterations: $MAX_ITERATIONS
 create_prs: $CREATE_PRS

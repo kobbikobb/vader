@@ -36,6 +36,11 @@ CREATE_PRS="${CREATE_PRS:-true}"
 STATE_REPORTS_DIR=$(echo "$FRONTMATTER" | grep '^reports_dir:' | sed 's/reports_dir: *//' || true)
 REPORTS_DIR="${STATE_REPORTS_DIR:-$REPORTS_DIR}"
 INVARIANTS_FILE="${REPORTS_DIR}/invariants.md"
+CHECKPOINT=$(echo "$FRONTMATTER" | grep '^checkpoint:' | sed 's/checkpoint: *//' || true)
+CHECKPOINT="${CHECKPOINT:-idle}"
+CURRENT_MILESTONE=$(echo "$FRONTMATTER" | grep '^current_milestone:' | sed 's/current_milestone: *//')
+TOTAL_MILESTONES=$(echo "$FRONTMATTER" | grep '^total_milestones:' | sed 's/total_milestones: *//')
+WORK_BRANCH=$(echo "$FRONTMATTER" | grep '^work_branch:' | sed 's/work_branch: *//' || true)
 
 if [[ "$STATUS" == "done" ]]; then
   echo "Error: This plan is already completed." >&2
@@ -43,13 +48,32 @@ if [[ "$STATUS" == "done" ]]; then
 fi
 
 # Atomic frontmatter key update: scope sed to frontmatter block only, then mv.
+# Replaces an existing key; otherwise inserts it right before the closing --- of the
+# frontmatter block (needed to add new keys like checkpoint to older plan files).
 update_state_key() {
   local key="$1" value="$2"
   local tmp
   tmp="${STATE_FILE}.tmp.$$"
-  sed "/^---$/,/^---$/{ /^---$/!s/^${key}: .*/${key}: ${value}/; }" "$STATE_FILE" > "$tmp"
+  if grep -q "^${key}:" "$STATE_FILE"; then
+    sed "/^---$/,/^---$/{ /^---$/!s/^${key}: .*/${key}: ${value}/; }" "$STATE_FILE" > "$tmp"
+  else
+    # Insert before the second --- line (body start / frontmatter close)
+    awk -v key="$key" -v value="$value" '
+      /^---$/ { dashes++; if (dashes==2) { print key": "value } }
+      { print }
+    ' "$STATE_FILE" > "$tmp"
+  fi
   mv "$tmp" "$STATE_FILE"
 }
+
+# Migrate pre-existing 0-based plans: current_milestone 0 → 1, add checkpoint if missing
+if [[ "$CURRENT_MILESTONE" == "0" ]]; then
+  update_state_key "current_milestone" "1"
+  CURRENT_MILESTONE="1"
+fi
+if ! printf '%s' "$FRONTMATTER" | grep -q '^checkpoint:'; then
+  update_state_key "checkpoint" "idle"
+fi
 
 # Update status to executing
 update_state_key "status" "executing"
@@ -67,9 +91,28 @@ For EACH milestone:
   ```
 - Then switch back to main before starting the next milestone'
 else
-  BRANCH_INSTRUCTIONS='## Branch Strategy
+  BRANCH_INSTRUCTIONS="## Branch Strategy
 
-All milestones are committed to the current branch sequentially.'
+Before starting the first milestone, create (or reuse) a working branch to avoid
+committing directly to the checked-out branch.
+
+If a \`work_branch\` value is already set in the state file frontmatter, use that
+branch — checkout it and continue. This ensures resume after crash or /clear
+reconnects to the branch with prior milestone commits.
+
+If no \`work_branch\` is set, create one and persist it to the state file:
+\`\`\`
+WORK_BRANCH=\"vader/\$(date +%s)\"
+git checkout -b \"\$WORK_BRANCH\"
+\`\`\`
+
+Then persist the branch name to the state file via atomic write:
+\`\`\`
+sed '/^---$/,/^---$/{ /^---$/!s/^work_branch: .*/work_branch: '\$WORK_BRANCH'/; }' \"\$STATE_FILE\" > \"\$STATE_FILE.tmp.\$\$\"
+mv \"\$STATE_FILE.tmp.\$\$\" \"\$STATE_FILE\"
+\`\`\`
+
+All milestones are committed to this branch sequentially."
 fi
 
 # Output prompt directly to stdout
@@ -81,6 +124,9 @@ lives on disk. You only read tiny verdicts and the current milestone index.
 STATE FILE: $STATE_FILE
 REPORTS DIR: $REPORTS_DIR
 INVARIANTS FILE: $INVARIANTS_FILE
+CURRENT MILESTONE: $CURRENT_MILESTONE of $TOTAL_MILESTONES
+CHECKPOINT: $CHECKPOINT
+WORK BRANCH: ${WORK_BRANCH:-none}
 
 ## Context discipline (non-negotiable)
 
@@ -98,20 +144,83 @@ INVARIANTS FILE: $INVARIANTS_FILE
   - $REPORTS_DIR/milestone-N-executor.md
   - $REPORTS_DIR/milestone-N-verifier.md
 
+## Crash checkpointing
+
+The state file tracks a \`checkpoint\` field that records where you are within the
+current milestone's lifecycle. If execution is interrupted (crash, /clear, context
+compaction), resume by reading the checkpoint and skipping completed steps.
+
+Checkpoint values and what they mean:
+- \`idle\` — no work started on the current milestone. Start from step 1.
+- \`executor_done\` — Executor returned \`done\` but Verifier has not run.
+  Skip to step 4 (spawn Verifier).
+- \`verifier_approved\` — Verifier returned \`approve\` but commit not yet made.
+  Skip to step 6 (commit).
+- \`final_integration\` — after the last milestone. Skip to the Final
+  Integration pass.
+
+Resume safety on an \`idle\` checkpoint: \`idle\` does NOT guarantee a clean tree. A
+crash can leave partial uncommitted edits. Before re-running the Executor from \`idle\`:
+1. Run \`git status --short\`.
+2. If there are uncommitted changes in files the current milestone owns, the previous
+   Executor did not finish cleanly. Either (a) resume the partial work directly rather
+   than starting over, or (b) stash/discard if it is stale. Do not blindly re-run the
+   Executor over a dirty tree.
+
+After each transition, update the checkpoint via atomic tempfile+mv:
+\`\`\`
+sed "/^---$/,/^---$/{ /^---$/!s/^checkpoint: .*/checkpoint: <new-value>/; }" "$STATE_FILE" > "$STATE_FILE.tmp.$$"
+mv "$STATE_FILE.tmp.$$" "$STATE_FILE"
+\`\`\`
+
+When entering the Final Integration pass, set checkpoint to \`final_integration\` so a
+crash mid-integration resumes there instead of re-running an empty milestone loop.
+
+After a milestone is committed and current_milestone incremented, reset checkpoint
+to \`idle\` for the next milestone.
+
 $BRANCH_INSTRUCTIONS
+
+## Plan overrides (supersede persona defaults)
+
+The plan's constraints may require actions the executor persona discourages as general
+rules (e.g. modifying generated files, touching files outside the milestone scope).
+When the plan mandates something the persona forbids, the plan wins.
+
+Include these overrides when spawning each Executor:
+- Read the \`## Constraints\` section of the plan file.
+- If constraints mandate regenerating files, modifying generated output, or touching
+  files beyond the milestone scope, pass that as an explicit override to the Executor:
+  "The plan constraints require [X]. This overrides the persona rule against [Y]."
+- The Executor must follow the override for this milestone only; persona defaults
+  apply everywhere else.
+
+## Concurrency control
+
+When an Executor fans out to sub-subagents (clusters, bulk conversions, parallel tasks):
+- Run cluster subagents **sequentially**, not in parallel. Each cluster writes to
+  shared files (generated tables, policies, registries). Parallel writes race.
+- If the work is truly independent (different files, no shared output), parallel is
+  fine — but default to sequential unless you can prove independence.
+- The Executor persona instructs subagents to commit incrementally. Respect this:
+  do not batch all cluster work before any commit.
 
 ## Per-milestone procedure
 
-For each milestone from \`current_milestone\` up to \`total_milestones\`:
+For each milestone from \`current_milestone\` (1-based) up to \`total_milestones\`:
 
 1. Derive N and its name from the state file frontmatter + the \`## Milestone N\` header.
+   Check the checkpoint. If \`idle\`, start from step 1. If \`executor_done\`, skip
+   to step 4. If \`verifier_approved\`, skip to step 6.
 2. Read project tooling (test/lint/typecheck) — see Hard Rules below. Pass these to the
    subagents; do not run the suite yourself.
 3. Spawn a fresh **Executor** Agent:
    - Tell it to Read $EXECUTOR_PERSONA (its role) then the \`## Milestone N\` section.
+   - Pass the plan constraints as overrides (see Plan overrides section above).
    - Instruct it to implement the milestone, write tests for each scenario, run quality
      gates, and WRITE its full report to $REPORTS_DIR/milestone-N-executor.md.
    - Instruct it to respond with ONLY: \`done\` or \`needs-fix\` plus one line.
+   - On success: update checkpoint to \`executor_done\`.
 4. Spawn a fresh **Verifier** Agent:
    - Tell it to Read $VERIFIER_PERSONA, the milestone section, and
      $REPORTS_DIR/milestone-N-executor.md.
@@ -121,15 +230,19 @@ For each milestone from \`current_milestone\` up to \`total_milestones\`:
      $REPORTS_DIR/milestone-N-verifier.md, and APPEND a known-good invariant entry to
      $INVARIANTS_FILE.
    - Instruct it to respond with ONLY: \`approve\` or \`needs-fix\` plus one line.
-5. Fix loop: if Verifier returns \`needs-fix\`, spawn a fresh Executor with the issues,
-   then a fresh Verifier. Maximum 3 Executor-Verifier cycles per milestone. If issues
-   persist after 3 cycles, stop and report.
-6. Commit: \`vader: milestone N - [name]\`. If create_prs is enabled, push and create a PR.
+   - On approve: update checkpoint to \`verifier_approved\`.
+5. Fix loop: if Verifier returns \`needs-fix\`, reset checkpoint to \`idle\`, spawn a
+   fresh Executor with the issues, then a fresh Verifier. Maximum 3 Executor-Verifier
+   cycles per milestone. If issues persist after 3 cycles, stop and report.
+6. Commit: if \`git status --short\` is non-empty, commit with \`vader: milestone N - [name]\`.
+   If create_prs is enabled, push and create a PR. If the tree is clean (no staged or
+   unstaged changes), skip the commit — this avoids empty re-commits on resume after a
+   crash between commit and state increment.
 7. Persist structural anchor: append a short \`## Branch/PR\` block to
    $REPORTS_DIR/milestone-N-executor.md recording the branch name and PR URL/number, so
    later milestones and Final Integration can anchor on them from disk. Then update
-   \`current_milestone\` in $STATE_FILE (increment by 1) via a tempfile+mv atomic write;
-   never edit in place.
+   \`current_milestone\` in $STATE_FILE (increment by 1) and reset \`checkpoint\` to
+   \`idle\` via a tempfile+mv atomic write; never edit in place.
 
 ## Inter-milestone verification gate
 
@@ -148,7 +261,9 @@ spend retry cycles here.
 
 ## Final Integration pass (after the LAST user milestone)
 
-Run once in a FRESH Verifier, not from accumulated context:
+Run once in a FRESH Verifier, not from accumulated context. Before starting it, set the
+checkpoint to \`final_integration\` via atomic write so a crash mid-integration resumes
+here instead of re-running the (now-empty) milestone loop.
 
 1. Run the project's full test suite, full typecheck, and any sanity scripts.
 2. Spawn one final Verifier with \`is_final: true\` over the whole branch:
@@ -174,4 +289,6 @@ Run once in a FRESH Verifier, not from accumulated context:
 - If the Verifier keeps rejecting after 3 cycles, stop execution and report.
 - Recover project tooling from the repo CLAUDE.md or manifest (package.json / Makefile /
   pyproject.toml) and pass exact commands to subagents — do not guess.
+- Update the checkpoint after every state transition. A crash without a checkpoint
+  means the next resume cannot skip completed work.
 PROMPT

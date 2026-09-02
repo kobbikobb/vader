@@ -8,8 +8,8 @@ Execute the current Vader plan using **direct execution mode**.
 2. Note the `reports_dir` from the plan frontmatter and use it for every report path.
 3. Compose the prompt by running `VADER_STATE_DIR=.cursor/vader scripts/setup-exec.sh`. The output is the thin-router prompt text. Follow its procedure inline:
 
-   - Read only `current_milestone` from the plan frontmatter and the current `## Milestone N` section.
+   - Read `current_milestone`, `checkpoint`, and `work_branch` from the plan frontmatter and the current `## Milestone N` section. Use the checkpoint to skip completed sub-steps: `idle` starts from the Executor, `executor_done` skips to the Verifier, `verifier_approved` skips to commit. Update the checkpoint after each transition via atomic tempfile+mv; reset to `idle` after commit + `current_milestone` increment. Pass plan `## Constraints` as overrides to each Executor, and enforce sequential cluster subagent execution. When `create_prs` is false, create/reuse a working branch and persist its name to `work_branch` so resume reconnects.
    - Per milestone: spawn a fresh Task agent from `vader-executor` (report to `<reports_dir>/milestone-N-executor.md`, returns `done|needs-fix`), then a fresh Task agent from `vader-verifier` (report to `<reports_dir>/milestone-N-verifier.md`, appends to `<reports_dir>/invariants.md`, returns `approve|needs-fix`).
-   - Fix loop (max 3 cycles), commit, update `current_milestone`, run the inter-milestone verification gate.
+   - Fix loop (max 3 cycles — reset checkpoint to `idle` on each needs-fix), commit only if the tree is dirty, update `current_milestone`, run the inter-milestone verification gate.
    - After the last milestone, run a **Final Integration pass** in a fresh `vader-verifier` reading `<reports_dir>/invariants.md` + all verifier reports.
    - Only after Final Integration approves: set status `done` and output `<promise>Hurra Vader has Triumphed</promise>`. Keep the true-supervisor invariant: hold only milestone index + latest verdict; heavy content stays on disk in reports.
