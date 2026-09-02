@@ -11,7 +11,7 @@
     {
       "name": "vader",
       "source": "./",
-      "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects.",
+      "description": "A strict, opinionated wizard-driven workflow that plans and executes multi-milestone software projects.",
       "version": "3.1.0",
       "author": {
         "name": "Jakob Jonasson"
@@ -19,7 +19,7 @@
       "homepage": "https://github.com/kobbikobb/vader",
       "repository": "https://github.com/kobbikobb/vader",
       "license": "MIT",
-      "keywords": ["workflow", "planning", "milestones", "ralph-wiggum", "project-management"],
+      "keywords": ["workflow", "planning", "milestones", "project-management"],
       "category": "productivity"
     }
   ]

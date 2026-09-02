@@ -96,12 +96,9 @@ Specialized agents, each a markdown file you can customize:
 
 Edit `agents/*.md` to match your team's conventions.
 
-## Execution Modes
+## Execution
 
-- **ralph-wiggum mode** (default) — delegates to the [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) plugin for iteration management
-- **Direct mode** (fallback) — runs the thin-router loop directly if ralph-wiggum isn't installed
-
-Each milestone runs in a fresh Executor → Verifier subagent pair. Reports are written to `.claude/vader/reports/` so progress survives session clears.
+`/vader:exec` runs a thin-router loop: each milestone runs in a fresh Executor → Verifier subagent pair. Reports are written to `reports/` under the state dir so progress survives session clears.
 
 ## Tips
 
@@ -113,7 +110,6 @@ Each milestone runs in a fresh Executor → Verifier subagent pair. Reports are 
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
-- [ralph-wiggum](https://github.com/anthropics/claude-code-plugins/tree/main/ralph-wiggum) plugin (optional)
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "vader",
   "version": "3.1.0",
-  "description": "A strict, opinionated wizard-driven workflow that wraps ralph-wiggum to plan and execute multi-milestone software projects using specialized agents.",
+  "description": "A strict, opinionated wizard-driven workflow that plans and executes multi-milestone software projects using specialized agents.",
   "author": {
     "name": "Jakob Jonasson",
     "url": "https://github.com/kobbikobb"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Compose the ralph-wiggum prompt from the vader plan state file
+# Compose the thin-router execution prompt from the vader plan state file
 # Reads .claude/vader/plan.local.md and outputs the prompt to stdout
 #
 # The prompt is a THIN ROUTER: the supervisor holds only the current milestone
@@ -54,7 +54,7 @@ update_state_key() {
 # Update status to executing
 update_state_key "status" "executing"
 
-# Build branch/PR instructions based on create_prs setting (reused from ralph-wiggum)
+# Build branch/PR instructions based on create_prs setting
 if [[ "$CREATE_PRS" == "true" ]]; then
   BRANCH_INSTRUCTIONS='## Branch & PR Strategy
 

@@ -2,7 +2,7 @@
 name: vader-exec
 description: Execute the current Vader plan milestone by milestone via fresh executor/verifier subagents.
 ---
-Execute the current Vader plan using **direct execution mode** (Cursor has no ralph-wiggum loop — never try to invoke it).
+Execute the current Vader plan using **direct execution mode**.
 
 1. Read `VADER_STATE_DIR` default `.cursor/vader` — if `.cursor/vader/plan.local.md` does not exist, tell the user to run `/vader` first and stop.
 2. Note the `reports_dir` from the plan frontmatter and use it for every report path.
