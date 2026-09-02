@@ -49,7 +49,7 @@ During planning, the wizard spawns Researcher and Planner as Task subagents. Dur
 - `setup-refine.sh` — resolves branch/base/PR, enforces clean tree + non-default branch, writes the refine state file (resumable per-branch)
 - `check-permissions.sh` — detects permission mode, nudges toward `--dangerously-skip-permissions`
 
-**Hooks** (`hooks/`): `session-start.sh` fires on SessionStart to warn if not in bypass-permissions mode.
+**Hooks** (`hooks/`): `session-start.sh` fires on SessionStart to warn if not in bypass-permissions mode. `pre-tool-use.sh` fires on PreToolUse for the file-editing tools and denies them while the plan state file says `status: planned` — the window between `/vader` saving a plan and `/vader:exec` starting it. Hooks still run under `--dangerously-skip-permissions`, which is why the gate lives here and not in skill `allowed-tools`.
 
 **State files**:
 

@@ -100,6 +100,8 @@ Edit `agents/*.md` to match your team's conventions.
 
 `/vader:exec` runs a thin-router loop: each milestone runs in a fresh Executor → Verifier subagent pair. Reports are written to `reports/` under the state dir so progress survives session clears.
 
+Between saving a plan and starting it, a `PreToolUse` hook denies `Edit`/`Write`/`MultiEdit`/`NotebookEdit` so a session cannot skip the loop and start implementing by hand. `/vader:exec` lifts it; `/vader:cancel` drops the plan. Claude Code only — the Cursor adapter ships commands and agents, not hooks.
+
 ## Tips
 
 - Use `--dangerously-skip-permissions` for uninterrupted overnight execution
