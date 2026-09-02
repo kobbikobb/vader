@@ -532,3 +532,89 @@ EOF
   [[ "$output" == *"git status --short"* ]]
   [[ "$output" == *"skip the commit"* ]]
 }
+
+@test "should emit push and PR commands when create_prs is true" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git push -u origin vader/"* ]]
+  [[ "$output" == *"gh pr create"* ]]
+  [[ "$output" == *"--base main"* ]]
+}
+
+@test "should include final_integration checkpoint value" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"final_integration"* ]]
+}
+
+@test "should instruct dirty-tree handling on idle resume" {
+  create_plan_file
+
+  run "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git status --short"* ]]
+  [[ "$output" == *"partial uncommitted edits"* ]]
+}
+
+@test "checkpoint update sed replaces value atomically in frontmatter only" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "sed-1"
+status: executing
+current_milestone: 1
+checkpoint: idle
+total_milestones: 2
+max_iterations: 15
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Sed Plan
+body mentions checkpoint: idle but is not frontmatter
+EOF
+
+  sed "/^---$/,/^---$/{ /^---$/!s/^checkpoint: .*/checkpoint: executor_done/; }" .claude/vader/plan.local.md > /tmp/sedout.$$
+  mv /tmp/sedout.$$ .claude/vader/plan.local.md
+
+  # frontmatter checkpoint updated
+  grep -q "^checkpoint: executor_done$" .claude/vader/plan.local.md
+  # body text unchanged
+  grep -q "body mentions checkpoint: idle but is not frontmatter" .claude/vader/plan.local.md
+  # no temp file left
+  ! ls /tmp/sedout.$$ 2>/dev/null
+}
+
+@test "checkpoint update sed inserts missing field before closing frontmatter" {
+  mkdir -p .claude/vader
+  cat > .claude/vader/plan.local.md <<'EOF'
+---
+session_id: "sed-2"
+status: executing
+current_milestone: 2
+total_milestones: 3
+max_iterations: 15
+created_at: "2026-02-23T00:00:00Z"
+---
+# Plan: Sed Insert Plan
+EOF
+
+  awk -v key="checkpoint" -v value="idle" '
+    /^---$/ { dashes++; if (dashes==2) { print key": "value } }
+    { print }
+  ' .claude/vader/plan.local.md > /tmp/sedins.$$
+  mv /tmp/sedins.$$ .claude/vader/plan.local.md
+
+  # inserted before the body marker
+  grep -q "^checkpoint: idle$" .claude/vader/plan.local.md
+  # still two frontmatter dashes
+  [[ "$(grep -c '^---$' .claude/vader/plan.local.md)" -eq 2 ]]
+  # body intact
+  grep -q "# Plan: Sed Insert Plan" .claude/vader/plan.local.md
+  ! ls /tmp/sedins.$$ 2>/dev/null
+}

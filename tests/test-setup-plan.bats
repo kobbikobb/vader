@@ -209,3 +209,50 @@ teardown() {
   grep -q "Known-good invariants" .claude/vader/reports/invariants.md
   [[ "$(cat .claude/vader/reports/invariants.md)" != *"stale"* ]]
 }
+
+@test "should reject milestone 3x larger than predecessor by scenarios" {
+  # M1 has 1 scenario / 1 file, M2 has 3 scenarios / 3 files — exactly 3x by both.
+  # M2 at 3 scenarios stays under the scenario cap, isolating the ratio check.
+  S1='[{"name":"s1","check":"c"}]'
+  S2='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"}]'
+  MILESTONES='[{"name":"Small","scope":"x","files":["a.ts"],"scenarios":'"$S1"'},{"name":"Huge","scope":"y","files":["b.ts","c.ts","d.ts"],"scenarios":'"$S2"'}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"times larger"* ]]
+  [[ "$output" == *"Huge"* ]]
+}
+
+@test "should accept milestone under 3x predecessor" {
+  # M1 has 2 scenarios, M2 has 4 — 2x, under the 3x threshold, both under cap
+  S1='[{"name":"s1","check":"c"},{"name":"s2","check":"c"}]'
+  S2='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"},{"name":"s4","check":"c"}]'
+  MILESTONES='[{"name":"Small","scope":"x","files":["a.ts","b.ts"],"scenarios":'"$S1"'},{"name":"Medium","scope":"y","files":["c.ts","d.ts"],"scenarios":'"$S2"'}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".claude/vader/plan.local.md" ]
+}
+
+@test "should not flag the first milestone for size (no predecessor)" {
+  S1='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"}]'
+  MILESTONES='[{"name":"First","scope":"x","files":[],"scenarios":'"$S1"'}]'
+
+  run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".claude/vader/plan.local.md" ]
+}
+
+@test "should allow override of size ratio via VADER_ALLOW_LARGE_MILESTONES" {
+  S1='[{"name":"s1","check":"c"}]'
+  S2='[{"name":"s1","check":"c"},{"name":"s2","check":"c"},{"name":"s3","check":"c"}]'
+  MILESTONES='[{"name":"Small","scope":"x","files":["a.ts"],"scenarios":'"$S1"'},{"name":"Huge","scope":"y","files":["b.ts","c.ts","d.ts"],"scenarios":'"$S2"'}]'
+
+  VADER_ALLOW_LARGE_MILESTONES=1 run "$SCRIPT" "Test" "Scope" "Constraints" "Criteria" "$MILESTONES" 10
+
+  [ "$status" -eq 0 ]
+  [ -f ".claude/vader/plan.local.md" ]
+}

@@ -156,12 +156,25 @@ Checkpoint values and what they mean:
   Skip to step 4 (spawn Verifier).
 - \`verifier_approved\` — Verifier returned \`approve\` but commit not yet made.
   Skip to step 6 (commit).
+- \`final_integration\` — after the last milestone. Skip to the Final
+  Integration pass.
+
+Resume safety on an \`idle\` checkpoint: \`idle\` does NOT guarantee a clean tree. A
+crash can leave partial uncommitted edits. Before re-running the Executor from \`idle\`:
+1. Run \`git status --short\`.
+2. If there are uncommitted changes in files the current milestone owns, the previous
+   Executor did not finish cleanly. Either (a) resume the partial work directly rather
+   than starting over, or (b) stash/discard if it is stale. Do not blindly re-run the
+   Executor over a dirty tree.
 
 After each transition, update the checkpoint via atomic tempfile+mv:
 \`\`\`
 sed "/^---$/,/^---$/{ /^---$/!s/^checkpoint: .*/checkpoint: <new-value>/; }" "$STATE_FILE" > "$STATE_FILE.tmp.$$"
 mv "$STATE_FILE.tmp.$$" "$STATE_FILE"
 \`\`\`
+
+When entering the Final Integration pass, set checkpoint to \`final_integration\` so a
+crash mid-integration resumes there instead of re-running an empty milestone loop.
 
 After a milestone is committed and current_milestone incremented, reset checkpoint
 to \`idle\` for the next milestone.
@@ -248,7 +261,9 @@ spend retry cycles here.
 
 ## Final Integration pass (after the LAST user milestone)
 
-Run once in a FRESH Verifier, not from accumulated context:
+Run once in a FRESH Verifier, not from accumulated context. Before starting it, set the
+checkpoint to \`final_integration\` via atomic write so a crash mid-integration resumes
+here instead of re-running the (now-empty) milestone loop.
 
 1. Run the project's full test suite, full typecheck, and any sanity scripts.
 2. Spawn one final Verifier with \`is_final: true\` over the whole branch:
