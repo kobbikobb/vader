@@ -61,11 +61,38 @@ write_plan() {
   [ "$(echo "$output" | jq -r .hookSpecificOutput.permissionDecision)" == "deny" ]
 }
 
-@test "should register the hook for every file-editing tool" {
+@test "should deny a bash command that writes a file" {
+  write_plan planned
+
+  run bash -c "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cat > src/app.ts <<EOF\"}}' | '$SCRIPT'"
+
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r .hookSpecificOutput.permissionDecision)" == "deny" ]
+}
+
+@test "should allow a read-only bash command" {
+  write_plan planned
+
+  run bash -c "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status --short 2>/dev/null\"}}' | '$SCRIPT'"
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "should ignore a status line outside the frontmatter" {
+  printf -- '---\nstatus: executing\n---\n\n## Milestone 1\n\nstatus: planned\n' > .claude/vader/plan.local.md
+
+  run bash -c "echo '{}' | '$SCRIPT'"
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "should register the hook for every tool that can write a file" {
   run jq -er '.hooks.PreToolUse[0] | select(.hooks[0].command | endswith("/hooks/pre-tool-use.sh")) | .matcher' "$HOOKS_JSON"
 
   [ "$status" -eq 0 ]
-  for tool in Edit Write MultiEdit NotebookEdit; do
+  for tool in Edit Write MultiEdit NotebookEdit Bash; do
     [[ "$output" == *"$tool"* ]] || { echo "matcher misses $tool: $output"; return 1; }
   done
 }

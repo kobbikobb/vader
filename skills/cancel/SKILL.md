@@ -3,7 +3,7 @@ name: cancel
 description: "Abort the current vader execution"
 disable-model-invocation: true
 allowed-tools:
-  - Bash(rm -f .claude/vader/plan.local.md)
+  - Bash(rm -f "${VADER_STATE_DIR:-.claude/vader}/plan.local.md")
 ---
 
 # Vader Cancel
@@ -13,7 +13,7 @@ Abort the current vader execution and clean up state files.
 Run:
 
 ```!
-rm -f .claude/vader/plan.local.md
+rm -f "${VADER_STATE_DIR:-.claude/vader}/plan.local.md"
 ```
 
 Confirm to the user:
