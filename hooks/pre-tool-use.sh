@@ -33,7 +33,7 @@ case "$TOOL" in
       # Quoted plan prose carries ";" and "&" all the time, so chaining is only
       # looked for outside the arguments, and a span has to end the way bash
       # ends it: on \" sed would stop early and leave the separator hidden.
-      BARE=$(echo "${CMD#*.sh\"}" | sed -E -e 's/"([^"\]|\\.)*"//g' -e "s/'[^']*'//g")
+      BARE=$(echo "${CMD#*.sh\"}" | sed -E -e 's/"([^"\\]|\\.)*"//g' -e "s/'[^']*'//g")
       if [[ "$CMD" != *$'\n'* ]] && ! echo "$BARE" | grep -qE '[;&|<>`]|\$\('; then
         exit 0
       fi
