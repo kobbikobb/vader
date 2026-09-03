@@ -9,21 +9,33 @@ set -euo pipefail
 
 HOOK_INPUT=$(cat)
 STATE_FILE="${VADER_STATE_DIR:-.claude/vader}/plan.local.md"
+# shellcheck disable=SC2016  # both are literal command text, never expanded here
+CANCEL_CMD='rm -f "${VADER_STATE_DIR:-.claude/vader}/plan.local.md"'
+VADER_SCRIPT='^"\$\{CLAUDE_PLUGIN_ROOT\}/scripts/[a-z-]+\.sh"'
 
-if [[ ! -f "$STATE_FILE" ]] || ! sed -n '2,/^---$/p' "$STATE_FILE" | grep -qE '^status: planned[[:space:]]*$'; then
+# A CRLF plan file never closes the frontmatter range, so strip \r before parsing.
+if [[ ! -f "$STATE_FILE" ]] || ! tr -d '\r' < "$STATE_FILE" | sed -n '2,/^---$/p' | grep -qE '^status: planned[[:space:]]*$'; then
   exit 0
 fi
 
-TOOL=$(jq -r '.tool_name // ""' <<<"$HOOK_INPUT" 2>/dev/null || echo "")
-CMD=$(jq -r '.tool_input.command // ""' <<<"$HOOK_INPUT" 2>/dev/null || echo "")
+TOOL=$(echo "$HOOK_INPUT" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+CMD=$(echo "$HOOK_INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
 
 case "$TOOL" in
   Edit|Write|MultiEdit|NotebookEdit) ;;
-  # Guessing which commands write leaks both ways, so only vader's own commands
-  # pass, and only unchained, or "touch app.ts; echo plan.local.md" walks through.
+  # Guessing which commands write leaks both ways, so only vader's own pass, and
+  # only as the whole command: matching the name anywhere lets "cp plan.local.md
+  # src/app.ts" and a second line after the invocation walk through.
   Bash)
-    if grep -qE 'CLAUDE_PLUGIN_ROOT|plan\.local\.md' <<<"$CMD" && ! grep -qE '[;&|`]|\$\(' <<<"$CMD"; then
+    if [[ "$CMD" == "$CANCEL_CMD" ]]; then
       exit 0
+    elif [[ "$CMD" =~ $VADER_SCRIPT ]]; then
+      # Quoted plan prose carries ";" and "&" all the time, so chaining is only
+      # looked for outside the arguments.
+      BARE=$(echo "${CMD#*.sh\"}" | sed "s/\"[^\"]*\"//g; s/'[^']*'//g")
+      if [[ "$CMD" != *$'\n'* ]] && ! echo "$BARE" | grep -qE '[;&|<>`]|\$\('; then
+        exit 0
+      fi
     fi
     ;;
   # An unreadable payload allows, or a broken jq locks the session out of /vader:cancel.
@@ -36,7 +48,7 @@ cat <<'JSON'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "A vader plan is saved but execution has not started, so edits are blocked. Run /vader:exec to start the milestone loop, or /vader:cancel to drop the plan."
+    "permissionDecisionReason": "A vader plan is saved but execution has not started, so edits and shell commands other than vader's own are blocked. Run /vader:exec to start the milestone loop, or /vader:cancel to drop the plan."
   }
 }
 JSON
