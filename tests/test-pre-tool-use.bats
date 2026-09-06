@@ -175,6 +175,33 @@ touch src/app.ts'
   [ -z "$output" ]
 }
 
+@test "should deny a command substitution inside a quoted argument" {
+  write_plan planned
+
+  run_hook Bash '"${CLAUDE_PLUGIN_ROOT}/scripts/setup-exec.sh" "$(touch src/app.ts)"'
+
+  [ "$status" -eq 0 ]
+  [ "$(decision)" == "deny" ]
+}
+
+@test "should deny a backtick substitution inside a quoted argument" {
+  write_plan planned
+
+  run_hook Bash '"${CLAUDE_PLUGIN_ROOT}/scripts/setup-exec.sh" "`touch src/app.ts`"'
+
+  [ "$status" -eq 0 ]
+  [ "$(decision)" == "deny" ]
+}
+
+@test "should allow plan prose that mentions a substitution in single quotes" {
+  write_plan planned
+
+  run_hook Bash '"${CLAUDE_PLUGIN_ROOT}/scripts/setup-plan.sh" "t" "s" "c" "s" '"'"'[{"goal":"document $(date) usage"}]'"'"' 3 true'
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 @test "should allow a payload whose tool cannot be read" {
   write_plan planned
 
