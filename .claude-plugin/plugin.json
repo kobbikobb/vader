@@ -1,6 +1,6 @@
 {
   "name": "vader",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "A strict, opinionated wizard-driven workflow that plans and executes multi-milestone software projects using specialized agents.",
   "author": {
     "name": "Jakob Jonasson",
