@@ -42,6 +42,24 @@ A milestone whose only deliverable is "verify earlier work" — counts match, te
 
 If the last milestone has no implementation work — only `it("should boot")`, `it("should typecheck")`, `it("should match counts")` — flag it. The Final Integration pass already does these.
 
+### 6. Cross-milestone size ratio
+
+Compare each milestone to its predecessor by scenario count and file count. Flag a milestone that is **3× or more** larger than the previous one (by either metric). A 3× jump almost always means the larger milestone bundles concerns that should be split per gateway, per module, or per surface.
+
+Example: M1 has 3 scenarios and 4 files. M2 has 12 scenarios and 18 files. Flag M2 — it is 4× by scenarios and 4.5× by files. Suggest splitting M2 into per-module milestones of similar size to M1.
+
+This check only compares consecutive milestones (M2 vs M1, M3 vs M2). The first milestone has no predecessor and is not flagged.
+
+### 7. Convergence checks must match exec ordering
+
+When generating convergence checks (e.g. "run X, then verify Y"), ensure the check order matches the execution order:
+
+- The **Verifier runs before the commit**. Any check that expects committed state (e.g. `git diff --exit-code`) will fail if the files are regenerated but not yet committed.
+- Use `git diff` (working tree vs HEAD) for pre-commit convergence, not `git diff --exit-code` which assumes a clean tree.
+- If a convergence check regenerates files, the check must verify the *content* (e.g. `grep 'expected_output' generated_file.ts`) rather than assuming the tree is clean.
+
+Common mistake: `guard:...:update && git diff --exit-code` — this fails immediately after regeneration because the regenerated files are uncommitted. Fix: `guard:...:update && git diff generated_file.ts | grep 'expected_line'`.
+
 ## Rules
 
 - Do not modify the plan — only report findings.
@@ -64,6 +82,7 @@ For each milestone:
 - File concerns: list of top-level dirs at depth 3
 - Ordering: ok / inversion (this milestone needs M_X's work)
 - Verification-only: yes / no
+- Size ratio: N× previous (ok / flagged) — skip for first milestone
 
 ### Issues
 

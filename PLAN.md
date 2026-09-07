@@ -72,7 +72,7 @@ Body instructs Claude through 5 stages:
 ---
 session_id: "<uuid>"
 status: planned | executing | done
-current_milestone: 0
+current_milestone: 1
 total_milestones: 3
 max_iterations: 15
 created_at: "2026-02-23T..."
